@@ -1,4 +1,4 @@
-.PHONY: help hello install lint format test run clean build up down logs ps shell db-shell docker-test
+.PHONY: help hello install lint format test run clean build up down logs ps shell db-shell docker-test test-verbose
 
 BACKEND_DIR := backend
 POETRY := poetry
@@ -22,6 +22,7 @@ help:
 	@echo "  make shell       - abre um terminal no container backend"
 	@echo "  make db-shell    - abre o terminal do PostgreSQL"
 	@echo "  make docker-test - executa os testes no container"
+	@echo "  make test-verbose - executa os testes com detalhes"
 
 hello:
 	@echo "Make esta funcionando!"
@@ -37,6 +38,9 @@ format:
 
 test:
 	cd $(BACKEND_DIR) && $(POETRY) run pytest
+
+test-verbose:
+	cd $(BACKEND_DIR) && $(POETRY) run pytest -v
 
 run:
 	cd $(BACKEND_DIR) && $(POETRY) run uvicorn --app-dir src backend.main:app --reload
