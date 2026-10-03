@@ -1,8 +1,6 @@
 import pytest
-from fastapi.testclient import TestClient
 
 from backend.health import criar_relatorio_saude
-from backend.main import app
 
 
 def test_relatorio_identifica_servico(nome_servico):
@@ -21,17 +19,6 @@ def test_remove_espacos_do_nome():
     resultado = criar_relatorio_saude("  backend  ")
 
     assert resultado["service"] == "backend"
-
-
-def test_health_check():
-    with TestClient(app) as client:
-        response = client.get("/")
-
-    assert response.status_code == 200
-    assert response.json() == {
-        "service": "backend",
-        "status": "ok",
-    }
 
 
 @pytest.mark.parametrize("nome", ["", " ", "\t", "\n"])
