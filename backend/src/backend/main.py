@@ -1,10 +1,8 @@
 from fastapi import FastAPI
 
-from backend.health import criar_relatorio_saude
+from backend.routers.health import router as health_router
+from backend.routers.servicos import router as servicos_router
 
-app = FastAPI()
-
-
-@app.get("/")
-def health_check() -> dict[str, str]:
-    return criar_relatorio_saude("backend")
+app = FastAPI(title="Cadastro de serviços")
+app.include_router(health_router)
+app.include_router(servicos_router)
