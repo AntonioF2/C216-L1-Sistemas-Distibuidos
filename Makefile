@@ -1,4 +1,5 @@
 .PHONY: help hello install lint format test run clean build up down logs ps shell db-shell docker-test test-verbose test-unit test-integration
+.PHONY: up-build logs-api test-db-up db-upgrade db-migration db-current db-history
 
 BACKEND_DIR := backend
 POETRY := poetry
@@ -25,6 +26,13 @@ help:
 	@echo "  make test-verbose - executa os testes com detalhes"
 	@echo "  make test-unit - executa os testes unitários"
 	@echo "  make test-integration - executa os testes HTTP"
+	@echo "  make test-db-up - inicia PostgreSQL isolado de testes (porta 5433)"
+	@echo "  make up-build - inicia ambiente e aplica migrations"
+	@echo "  make logs-api - acompanha logs do backend"
+	@echo "  make db-upgrade - aplica migrations no banco do Compose"
+	@echo "  make db-migration msg=descricao - gera migration local para revisao"
+	@echo "  make db-current - mostra versao atual do banco do Compose"
+	@echo "  make db-history - mostra historico de migrations"
 
 hello:
 	@echo "Make esta funcionando!"
@@ -79,3 +87,23 @@ db-shell:
 
 docker-test:
 	$(COMPOSE) exec $(BACKEND_SERVICE) pytest
+
+up-build: up
+
+logs-api:
+	$(COMPOSE) logs -f $(BACKEND_SERVICE)
+
+test-db-up:
+	$(COMPOSE) --profile test up -d --wait db-test
+
+db-upgrade:
+	$(COMPOSE) run --rm migrate
+
+db-migration:
+	cd $(BACKEND_DIR) && $(POETRY) run alembic revision --autogenerate -m "$(msg)"
+
+db-current:
+	$(COMPOSE) run --rm migrate python -m alembic current
+
+db-history:
+	cd $(BACKEND_DIR) && $(POETRY) run alembic history

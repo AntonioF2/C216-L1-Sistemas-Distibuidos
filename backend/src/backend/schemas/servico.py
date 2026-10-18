@@ -44,4 +44,5 @@ class ServicoPatch(ServicoBase):
 
 
 class ServicoResponse(ServicoReplace):
+    model_config = ConfigDict(extra="forbid", from_attributes=True)
     id: int = Field(gt=0)
