@@ -1,7 +1,10 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Response, status
+from sqlalchemy.orm import Session
 
+from backend.database.session import get_db
+from backend.repositories.servicos import ServicoRepository
 from backend.schemas.servico import (
     ServicoCreate,
     ServicoPatch,
@@ -11,11 +14,10 @@ from backend.schemas.servico import (
 from backend.services.servicos import ServicoNaoEncontrado, ServicoService
 
 router = APIRouter(prefix="/servicos", tags=["Serviços"])
-_service = ServicoService()
 
 
-def get_servico_service() -> ServicoService:
-    return _service
+def get_servico_service(db: Annotated[Session, Depends(get_db)]) -> ServicoService:
+    return ServicoService(ServicoRepository(db))
 
 
 Service = Annotated[ServicoService, Depends(get_servico_service)]

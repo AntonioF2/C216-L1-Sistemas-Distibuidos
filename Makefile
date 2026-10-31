@@ -1,4 +1,6 @@
 .PHONY: help hello install lint format test run clean build up down logs ps shell db-shell docker-test test-verbose test-unit test-integration
+.PHONY: up-build logs-api test-db-up db-upgrade db-migration db-current db-history
+.PHONY: frontend-install frontend-dev frontend-lint frontend-format frontend-check frontend-test frontend-test-e2e frontend-build check-all
 
 BACKEND_DIR := backend
 POETRY := poetry
@@ -25,6 +27,22 @@ help:
 	@echo "  make test-verbose - executa os testes com detalhes"
 	@echo "  make test-unit - executa os testes unitários"
 	@echo "  make test-integration - executa os testes HTTP"
+	@echo "  make test-db-up - inicia PostgreSQL isolado de testes (porta 5433)"
+	@echo "  make up-build - inicia ambiente e aplica migrations"
+	@echo "  make logs-api - acompanha logs do backend"
+	@echo "  make db-upgrade - aplica migrations no banco do Compose"
+	@echo "  make db-migration msg=descricao - gera migration local para revisao"
+	@echo "  make db-current - mostra versao atual do banco do Compose"
+	@echo "  make db-history - mostra historico de migrations"
+	@echo "  make frontend-install - instala dependencias do frontend"
+	@echo "  make frontend-dev - inicia o Vite"
+	@echo "  make frontend-lint - verifica lint com Biome"
+	@echo "  make frontend-format - formata o frontend com Biome"
+	@echo "  make frontend-check - verifica lint, formatacao e imports"
+	@echo "  make frontend-test - executa testes com Vitest"
+	@echo "  make frontend-test-e2e - executa testes com Playwright"
+	@echo "  make frontend-build - gera o build do frontend"
+	@echo "  make check-all - verifica backend e frontend (banco de testes deve estar iniciado)"
 
 hello:
 	@echo "Make esta funcionando!"
@@ -79,3 +97,49 @@ db-shell:
 
 docker-test:
 	$(COMPOSE) exec $(BACKEND_SERVICE) pytest
+
+up-build: up
+
+logs-api:
+	$(COMPOSE) logs -f $(BACKEND_SERVICE)
+
+test-db-up:
+	$(COMPOSE) --profile test up -d --wait db-test
+
+db-upgrade:
+	$(COMPOSE) run --rm migrate
+
+db-migration:
+	cd $(BACKEND_DIR) && $(POETRY) run alembic revision --autogenerate -m "$(msg)"
+
+db-current:
+	$(COMPOSE) run --rm migrate python -m alembic current
+
+db-history:
+	cd $(BACKEND_DIR) && $(POETRY) run alembic history
+
+frontend-install:
+	npm --prefix frontend ci
+
+frontend-dev:
+	npm --prefix frontend run dev
+
+frontend-lint:
+	npm --prefix frontend run lint
+
+frontend-format:
+	npm --prefix frontend run format
+
+frontend-check:
+	npm --prefix frontend run check
+
+frontend-test:
+	npm --prefix frontend run test
+
+frontend-test-e2e:
+	npm --prefix frontend run test:e2e
+
+frontend-build:
+	npm --prefix frontend run build
+
+check-all: lint test frontend-check frontend-test frontend-build frontend-test-e2e

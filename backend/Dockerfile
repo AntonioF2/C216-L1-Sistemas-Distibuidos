@@ -7,9 +7,9 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app/src
 ENV POETRY_VIRTUALENVS_CREATE=false
 
-RUN pip install --no-cache-dir poetry
+RUN pip install --no-cache-dir poetry==2.4.2
 
-COPY pyproject.toml ./
+COPY pyproject.toml poetry.lock ./
 RUN poetry install --with dev --no-interaction --no-ansi --no-root
 
 COPY . .
