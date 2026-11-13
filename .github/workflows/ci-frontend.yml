@@ -1,0 +1,78 @@
+name: CI - Frontend
+
+on:
+  pull_request:
+    paths:
+      - "frontend/**"
+      - ".github/workflows/ci-frontend.yml"
+      - "backend/**"
+      - "docker-compose*.yml"
+      - "scripts/e2e.mjs"
+      - "Makefile"
+  push:
+    branches:
+      - main
+    paths:
+      - "frontend/**"
+      - ".github/workflows/ci-frontend.yml"
+      - "backend/**"
+      - "docker-compose*.yml"
+      - "scripts/e2e.mjs"
+      - "Makefile"
+
+jobs:
+  quality:
+    name: Lint e formatação
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Obter código
+        uses: actions/checkout@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+      - name: Instalar dependências
+        run: npm ci
+      - name: Validar lint
+        run: npm run lint
+      - name: Verificar formatação
+        run: npm run format:check
+  tests:
+    name: Vitest, Build e Playwright
+    needs: quality
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Obter código
+        uses: actions/checkout@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+      - name: Instalar dependências
+        run: npm ci
+      - name: Executar testes unitários e de integração
+        run: npm run test
+      - name: Gerar build
+        run: npm run build
+      - name: Instalar Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Executar testes E2E
+        working-directory: .
+        run: make e2e
+      - name: Upload Playwright Report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 7

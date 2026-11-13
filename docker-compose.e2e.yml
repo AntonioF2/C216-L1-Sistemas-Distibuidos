@@ -1,0 +1,13 @@
+services:
+  backend:
+    ports: !override
+      - "127.0.0.1:8001:8000"
+    environment:
+      CORS_ORIGINS: http://localhost:5174,http://127.0.0.1:5174
+  frontend:
+    ports: !override
+      - "127.0.0.1:5174:5173"
+    environment:
+      VITE_API_URL: http://localhost:8001
+  db:
+    ports: !reset []

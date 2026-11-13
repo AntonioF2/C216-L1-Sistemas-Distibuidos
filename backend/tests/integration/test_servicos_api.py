@@ -10,7 +10,9 @@ def test_criar(client, dados_servico):
 def test_listar_e_filtrar(client, dados_servico):
     assert client.get("/servicos").json() == []
     ativo = client.post("/servicos", json=dados_servico).json()
-    inativo = client.post("/servicos", json={**dados_servico, "ativo": False}).json()
+    inativo = client.post(
+        "/servicos", json={**dados_servico, "nome": "Inativo", "ativo": False}
+    ).json()
     response = client.get("/servicos")
     assert response.status_code == 200
     assert response.json() == [ativo, inativo]

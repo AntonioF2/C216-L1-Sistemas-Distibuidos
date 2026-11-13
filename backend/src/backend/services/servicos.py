@@ -1,5 +1,8 @@
-from threading import RLock
+from psycopg.errors import UniqueViolation
+from sqlalchemy.exc import IntegrityError
 
+from backend.models.servico import Servico
+from backend.repositories.servicos import ServicoRepository
 from backend.schemas.servico import (
     ServicoCreate,
     ServicoPatch,
@@ -12,49 +15,68 @@ class ServicoNaoEncontrado(Exception):
     pass
 
 
+class ServicoNomeDuplicado(Exception):
+    pass
+
+
 class ServicoService:
-    def __init__(self):
-        self._servicos: dict[int, ServicoResponse] = {}
-        self._proximo_id = 1
-        self._lock = RLock()
+    def __init__(self, repository: ServicoRepository):
+        self.repository = repository
 
     def criar(self, dados: ServicoCreate) -> ServicoResponse:
-        with self._lock:
-            servico = ServicoResponse(id=self._proximo_id, **dados.model_dump())
-            self._servicos[servico.id] = servico
-            self._proximo_id += 1
-            return servico.model_copy(deep=True)
+        self._verificar_nome(dados.nome)
+        servico = Servico(**dados.model_dump(mode="json"))
+        return self._salvar(servico)
 
     def listar(self, ativo: bool | None = None) -> list[ServicoResponse]:
-        with self._lock:
-            return [
-                servico.model_copy(deep=True)
-                for servico in self._servicos.values()
-                if ativo is None or servico.ativo == ativo
-            ]
+        return [
+            ServicoResponse.model_validate(servico)
+            for servico in self.repository.listar(ativo)
+        ]
 
     def buscar(self, servico_id: int) -> ServicoResponse:
-        with self._lock:
-            if servico_id not in self._servicos:
-                raise ServicoNaoEncontrado("Serviço não encontrado")
-            return self._servicos[servico_id].model_copy(deep=True)
+        return ServicoResponse.model_validate(self._buscar_modelo(servico_id))
 
     def substituir(self, servico_id: int, dados: ServicoReplace) -> ServicoResponse:
-        with self._lock:
-            self.buscar(servico_id)
-            servico = ServicoResponse(id=servico_id, **dados.model_dump())
-            self._servicos[servico_id] = servico
-            return servico.model_copy(deep=True)
+        return self._atualizar(servico_id, dados.model_dump(mode="json"))
 
     def atualizar(self, servico_id: int, dados: ServicoPatch) -> ServicoResponse:
-        with self._lock:
-            atual = self.buscar(servico_id).model_dump()
-            atual.update(dados.model_dump(exclude_unset=True))
-            servico = ServicoResponse.model_validate(atual)
-            self._servicos[servico_id] = servico
-            return servico.model_copy(deep=True)
+        return self._atualizar(
+            servico_id, dados.model_dump(mode="json", exclude_unset=True)
+        )
 
     def excluir(self, servico_id: int) -> None:
-        with self._lock:
-            self.buscar(servico_id)
-            del self._servicos[servico_id]
+        self.repository.excluir(self._buscar_modelo(servico_id))
+
+    def _buscar_modelo(self, servico_id: int) -> Servico:
+        servico = self.repository.buscar(servico_id)
+        if servico is None:
+            raise ServicoNaoEncontrado("Serviço não encontrado")
+        return servico
+
+    def _verificar_nome(self, nome: str, servico_id: int | None = None):
+        servico_existente = self.repository.buscar_por_nome(nome)
+        if servico_existente is not None and servico_existente.id != servico_id:
+            raise ServicoNomeDuplicado("Já existe um serviço com esse nome")
+
+    def _atualizar(self, servico_id: int, alteracoes: dict) -> ServicoResponse:
+        servico = self._buscar_modelo(servico_id)
+        novo_nome = alteracoes.get("nome")
+        if novo_nome is not None and novo_nome != servico.nome:
+            self._verificar_nome(novo_nome, servico_id)
+        for campo, valor in alteracoes.items():
+            setattr(servico, campo, valor)
+        return self._salvar(servico)
+
+    def _salvar(self, servico: Servico) -> ServicoResponse:
+        try:
+            return ServicoResponse.model_validate(self.repository.salvar(servico))
+        except IntegrityError as erro:
+            if (
+                isinstance(erro.orig, UniqueViolation)
+                and erro.orig.diag.constraint_name == "uq_servicos_nome"
+            ):
+                raise ServicoNomeDuplicado(
+                    "Já existe um serviço com esse nome"
+                ) from erro
+            raise
