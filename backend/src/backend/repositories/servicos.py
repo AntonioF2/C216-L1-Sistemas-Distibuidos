@@ -17,6 +17,9 @@ class ServicoRepository:
     def buscar(self, servico_id: int) -> Servico | None:
         return self.db.get(Servico, servico_id)
 
+    def buscar_por_nome(self, nome: str) -> Servico | None:
+        return self.db.scalar(select(Servico).where(Servico.nome == nome))
+
     def salvar(self, servico: Servico) -> Servico:
         try:
             self.db.add(servico)

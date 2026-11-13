@@ -56,3 +56,8 @@ por `TEST_DATABASE_URL`; o banco deve terminar em `_test`.
 O CRUD de `/servicos` mantém GET, POST, PUT, PATCH e DELETE. Registros agora
 sobrevivem ao reinício da API. Consulte o README da raiz para contratos,
 exemplos, comandos de migrations e validação manual da persistência.
+
+Na Prática 7, `CORS_ORIGINS` autoriza as origens explícitas do frontend.
+A migration `0002_unique_servico_nome` impede nomes repetidos; criar ou
+renomear para um nome já utilizado retorna 409. Os testes incluem CORS,
+conflitos de nomes e a restrição do banco. A suíte continua usando PostgreSQL.

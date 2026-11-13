@@ -1,9 +1,10 @@
 .PHONY: help hello install lint format test run clean build up down logs ps shell db-shell docker-test test-verbose test-unit test-integration
 .PHONY: up-build logs-api test-db-up db-upgrade db-migration db-current db-history
 .PHONY: frontend-install frontend-dev frontend-lint frontend-format frontend-check frontend-test frontend-test-e2e frontend-build check-all
+.PHONY: e2e
 
 BACKEND_DIR := backend
-POETRY := poetry
+POETRY := python -m poetry
 COMPOSE := docker compose
 BACKEND_SERVICE := backend
 
@@ -17,7 +18,7 @@ help:
 	@echo "  make run         - inicia a API FastAPI localmente"
 	@echo "  make clean       - remove caches do Python e das ferramentas"
 	@echo "  make build       - cria as imagens Docker"
-	@echo "  make up          - inicia backend e banco de dados"
+	@echo "  make up          - inicia frontend, backend e banco de dados"
 	@echo "  make down        - para os serviços Docker"
 	@echo "  make logs        - acompanha os logs dos serviços"
 	@echo "  make ps          - lista os serviços em execução"
@@ -40,7 +41,8 @@ help:
 	@echo "  make frontend-format - formata o frontend com Biome"
 	@echo "  make frontend-check - verifica lint, formatacao e imports"
 	@echo "  make frontend-test - executa testes com Vitest"
-	@echo "  make frontend-test-e2e - executa testes com Playwright"
+	@echo "  make frontend-test-e2e - executa Playwright contra stack ja iniciada"
+	@echo "  make e2e - sobe stack isolada, testa e remove apenas seu volume de testes"
 	@echo "  make frontend-build - gera o build do frontend"
 	@echo "  make check-all - verifica backend e frontend (banco de testes deve estar iniciado)"
 
@@ -142,4 +144,7 @@ frontend-test-e2e:
 frontend-build:
 	npm --prefix frontend run build
 
-check-all: lint test frontend-check frontend-test frontend-build frontend-test-e2e
+e2e:
+	node scripts/e2e.mjs
+
+check-all: lint test-db-up test frontend-check frontend-test frontend-build e2e

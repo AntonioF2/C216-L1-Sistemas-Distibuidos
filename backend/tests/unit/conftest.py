@@ -22,6 +22,11 @@ class RepositoryEmMemoria:
     def buscar(self, servico_id):
         return deepcopy(self.registros.get(servico_id))
 
+    def buscar_por_nome(self, nome):
+        return next(
+            (deepcopy(s) for s in self.registros.values() if s.nome == nome), None
+        )
+
     def listar(self, ativo=None):
         return [
             deepcopy(s)

@@ -1,13 +1,14 @@
 # C216-L1 Sistemas Distribuídos
 
-Repositório das práticas de Sistemas Distribuídos. A Prática 5 evolui o
-cadastro de serviços da Prática 4 para persistência PostgreSQL com SQLAlchemy
-e migrations Alembic, preservando os contratos HTTP e os testes anteriores.
+Repositório das práticas de Sistemas Distribuídos. Na Prática 7, o frontend
+React consome a API FastAPI e persiste o cadastro de serviços no PostgreSQL.
+É possível cadastrar, listar, consultar detalhes, editar, ativar/desativar e excluir.
+Os dados permanecem após recarregar a página.
 
 ## Arquitetura
 
 ```text
-FastAPI / routers → services → repositories → SQLAlchemy → PostgreSQL
+React → fetch → FastAPI / routers → services → repositories → SQLAlchemy → PostgreSQL
 ```
 
 - `backend/src/backend/main.py`: inicialização e registro de routers.
@@ -24,8 +25,8 @@ FastAPI / routers → services → repositories → SQLAlchemy → PostgreSQL
 
 ## Ambiente Docker
 
-Pré-requisitos: Docker com Compose. Para execução local: Python 3.14,
-Poetry 2.4.x e, opcionalmente, Make.
+Pré-requisitos: Docker com Compose 2.24.4 ou superior. Para os testes locais:
+Python 3.14, Poetry 2.4.x, Node.js 22.12 ou superior, npm e Make.
 
 ```bash
 make up-build
@@ -42,10 +43,12 @@ docker compose run --rm migrate python -m alembic current
 ```
 
 O Compose inicia PostgreSQL, executa o serviço temporário `migrate` e só
-inicia a API se as migrations terminarem com sucesso. O serviço `migrate`
+inicia a API se as migrations terminarem com sucesso. O frontend inicia
+após o healthcheck da API. O serviço `migrate`
 encerrar com código 0 é normal. A imagem instala as versões de
 `pyproject.toml` e `poetry.lock`.
 
+Frontend: http://localhost:5173
 API: http://localhost:8000
 Swagger UI: http://localhost:8000/docs
 
@@ -91,6 +94,8 @@ estiver indisponível.
 O ID é gerado pelo PostgreSQL. Nome: 1 a 100 caracteres, removendo espaços
 nas extremidades. URL: HTTP ou HTTPS. Campos desconhecidos são rejeitados.
 IDs inexistentes retornam 404; dados inválidos e IDs não positivos, 422.
+Nomes repetidos retornam 409 com a mensagem "Já existe um serviço com esse nome".
+Essa regra também vale para PUT e PATCH; manter o próprio nome é permitido.
 
 POST permite omitir `ativo` (padrão `true`). PUT exige todos os campos
 editáveis. PATCH preserva campos omitidos, rejeita `null` e aceita `{}`
@@ -111,7 +116,10 @@ Corpo de PATCH:
 ## Migrations
 
 A migration inicial `0001_create_servicos` reproduz a tabela a partir de
-um banco vazio. Os comandos de inspeção/aplicação usam o banco do Compose:
+um banco vazio. A migration `0002_unique_servico_nome` acrescenta a restrição
+de nome único, sem apagar ou renomear registros existentes. Se um banco antigo
+contiver nomes repetidos, eles devem ser resolvidos antes dessa migration.
+Os comandos de inspeção/aplicação usam o banco do Compose:
 
 ```bash
 make db-upgrade
@@ -142,6 +150,32 @@ o container receba as novas migrations. Não apague o banco para atualizar
 sua estrutura.
 
 ## Testes e CI
+
+Na primeira execução, instale as dependências e o navegador dos testes:
+
+```bash
+make install
+make frontend-install
+cd frontend
+npx playwright install chromium
+cd ..
+make check-all
+```
+
+`make check-all` verifica Ruff, Pytest, Biome, Vitest, build e E2E.
+Ele inicia o banco de testes do backend e exige Docker em execução.
+O Makefile utiliza `python -m poetry` por padrão para também funcionar
+quando o Windows bloqueia o launcher `poetry.exe`.
+
+Os testes Vitest simulam `fetch`; não dependem da API nem do banco.
+`make e2e` sobe a stack Compose isolada `lab-e2e`, aplica migrations,
+executa o Playwright em `http://localhost:5174` (API na porta 8001) e
+remove containers e volume exclusivos dessa stack ao terminar, inclusive em falhas.
+O volume de desenvolvimento é preservado. `make frontend-test-e2e` usa uma
+stack já iniciada, com `E2E_BASE_URL` opcional (padrão `http://localhost:5173`).
+
+O workflow `ci-frontend.yml` mantém lint/formatação em um job e os testes
+em outro que depende do primeiro, executando `make e2e` para a validação full-stack.
 
 Inicie o banco exclusivo de testes (porta 5433):
 
@@ -202,6 +236,33 @@ docker compose exec db psql -U postgres -d c216 -c "SELECT * FROM servicos;"
 
 `make down` preserva o volume `postgres_data`. Não use `down -v` se quiser
 manter os registros. O banco de testes é descartável e usa tmpfs.
+
+## Frontend e CORS
+
+O frontend concentra GET, POST, PUT, PATCH e DELETE em
+`frontend/src/services/servicos.js`. O estado e as operações da tela ficam em
+`frontend/src/hooks/useServicos.js`. O formulário aguarda a resposta e mantém
+os campos se houver erro; o botão fica desabilitado durante o envio.
+Carregamento, falhas de conexão e erros HTTP são apresentados na interface.
+
+`VITE_API_URL` é o endereço da API acessível pelo navegador
+(padrão `http://localhost:8000`), não o hostname interno `backend`.
+Essa variável é pública e não deve conter segredos.
+`CORS_ORIGINS` contém origens explícitas separadas por vírgulas; por padrão,
+`http://localhost:5173,http://127.0.0.1:5173`. A API permite os cinco métodos
+utilizados, sem wildcard. CORS não substitui autenticação.
+
+`API_PORT` e `FRONTEND_PORT` configuram as portas publicadas. Se alterá-las,
+ajuste também `VITE_API_URL` e `CORS_ORIGINS` no `.env`.
+Os containers recebem essas variáveis pelo Compose.
+Para iniciar apenas o Vite local, use `make frontend-dev` com a API já em execução;
+um arquivo `frontend/.env.local` pode definir `VITE_API_URL` nesse modo.
+
+Para validar manualmente: abra o frontend, cadastre um serviço e recarregue.
+Confira que o registro permanece e que o mesmo nome retorna erro.
+Use Detalhes (GET), Editar (PUT), Ativar/Desativar (PATCH) e Excluir (DELETE).
+A aba Network deve mostrar as chamadas a `/servicos` e o preflight OPTIONS
+nas operações que o exigem.
 
 ## Limites da prática
 

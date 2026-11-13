@@ -7,14 +7,18 @@ from backend.services.servicos import ServicoNaoEncontrado
 
 def test_criar_ids_distintos(servico_service, dados_servico):
     primeiro = servico_service.criar(ServicoCreate(**dados_servico))
-    segundo = servico_service.criar(ServicoCreate(**dados_servico))
+    segundo = servico_service.criar(
+        ServicoCreate(**{**dados_servico, "nome": "Segundo"})
+    )
     assert primeiro.id != segundo.id
     assert servico_service.buscar(primeiro.id) == primeiro
 
 
 def test_filtrar_servicos(servico_service, dados_servico):
     ativo = servico_service.criar(ServicoCreate(**dados_servico))
-    inativo = servico_service.criar(ServicoCreate(**{**dados_servico, "ativo": False}))
+    inativo = servico_service.criar(
+        ServicoCreate(**{**dados_servico, "nome": "Inativo", "ativo": False})
+    )
     assert servico_service.listar() == [ativo, inativo]
     assert servico_service.listar(True) == [ativo]
     assert servico_service.listar(False) == [inativo]

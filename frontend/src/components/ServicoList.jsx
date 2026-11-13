@@ -1,4 +1,11 @@
-export function ServicoList({ servicos }) {
+export function ServicoList({
+  servicos,
+  onInspect,
+  onEdit,
+  onToggle,
+  onDelete,
+  disabled = false,
+}) {
   if (servicos.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-[#00613C]/30 bg-white px-6 py-12 text-center">
@@ -37,6 +44,40 @@ export function ServicoList({ servicos }) {
           >
             {servico.url}
           </a>
+          <div className="mt-4 flex flex-wrap gap-3 text-sm">
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => onInspect(servico)}
+              className="text-[#00613C] underline disabled:opacity-50"
+            >
+              Detalhes
+            </button>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => onEdit(servico)}
+              className="text-[#00613C] underline disabled:opacity-50"
+            >
+              Editar
+            </button>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => onToggle(servico)}
+              className="text-[#00613C] underline disabled:opacity-50"
+            >
+              {servico.ativo ? "Desativar" : "Ativar"}
+            </button>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => onDelete(servico)}
+              className="text-[#7A192D] underline disabled:opacity-50"
+            >
+              Excluir
+            </button>
+          </div>
         </li>
       ))}
     </ul>

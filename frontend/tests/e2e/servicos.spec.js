@@ -1,50 +1,104 @@
 import { expect, test } from "@playwright/test";
 
-test("carrega a interface com a listagem vazia", async ({ page }) => {
-  await page.goto("/");
-  await expect(
-    page.getByRole("heading", { name: "Gerenciador de Serviços" }),
-  ).toBeVisible();
-  await expect(page.getByLabel("Nome", { exact: true })).toBeVisible();
-  await expect(page.getByLabel("URL", { exact: true })).toBeVisible();
-  await expect(page.getByLabel("Serviço ativo")).toBeChecked();
-  await expect(page.getByText("Nenhum serviço cadastrado.")).toBeVisible();
-});
+const uniqueName = () =>
+  `E2E Serviço ${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-test("cadastra um serviço e o exibe na listagem", async ({ page }) => {
+async function cadastrar(page, nome) {
   await page.goto("/");
-  await page.getByLabel("Nome", { exact: true }).fill("Autenticação");
+  await page.getByLabel("Nome", { exact: true }).fill(nome);
   await page
     .getByLabel("URL", { exact: true })
     .fill("https://example.com/auth");
   await page.getByRole("button", { name: "Adicionar serviço" }).click();
-  await expect(page.getByRole("listitem")).toContainText("Autenticação");
-  await expect(page.getByRole("listitem")).toContainText(
-    "https://example.com/auth",
-  );
-  await expect(page.getByRole("listitem")).toContainText("Ativo");
-  await expect(page.getByText("Nenhum serviço cadastrado.")).toBeHidden();
-  await page.reload();
-  await expect(page.getByText("Nenhum serviço cadastrado.")).toBeVisible();
+  return page.getByRole("listitem").filter({ hasText: nome });
+}
+
+test("carrega a interface e a listagem da API", async ({ page }) => {
+  await page.goto("/");
+  await expect(
+    page.getByRole("heading", { name: "Gerenciador de Serviços" }),
+  ).toBeVisible();
+  await expect(page.getByRole("status")).toBeHidden();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(page.getByLabel("Nome", { exact: true })).toBeVisible();
 });
 
-test("mostra erro quando o nome está vazio", async ({ page }) => {
+test("cadastra, persiste, consulta, edita, altera situação e exclui", async ({
+  page,
+}) => {
+  const nome = uniqueName();
+  let item = await cadastrar(page, nome);
+  await expect(item).toBeVisible();
+  await page.reload();
+  item = page.getByRole("listitem").filter({ hasText: nome });
+  await expect(item).toBeVisible();
+  await item.getByRole("button", { name: "Detalhes" }).click();
+  await expect(
+    page.getByRole("region", { name: "Detalhes do serviço" }),
+  ).toContainText(nome);
+  await page.getByRole("button", { name: "Fechar detalhes" }).click();
+  await item.getByRole("button", { name: "Editar", exact: true }).click();
+  await expect(page.getByLabel("Nome", { exact: true })).toHaveValue(nome);
+  const editado = `${nome} editado`;
+  await page.getByLabel("Nome", { exact: true }).fill(editado);
+  await page
+    .getByLabel("URL", { exact: true })
+    .fill("https://example.com/editado");
+  await page.getByRole("button", { name: "Salvar alterações" }).click();
+  item = page.getByRole("listitem").filter({ hasText: editado });
+  await expect(item).toContainText("https://example.com/editado");
+  await item.getByRole("button", { name: "Desativar" }).click();
+  await expect(
+    item.getByRole("button", { name: "Ativar", exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(item).toContainText("Inativo");
+  await item.getByRole("button", { name: "Ativar", exact: true }).click();
+  await expect(item.getByRole("button", { name: "Desativar" })).toBeVisible();
+  await item.getByRole("button", { name: "Excluir" }).click();
+  await expect(item).toHaveCount(0);
+  await page.reload();
+  await expect(item).toHaveCount(0);
+});
+
+test("exibe erro real de nome duplicado sem apagar o formulário", async ({
+  page,
+}) => {
+  const nome = uniqueName();
+  const item = await cadastrar(page, nome);
+  await expect(item).toBeVisible();
+  await page.getByLabel("Nome", { exact: true }).fill(nome);
+  await page
+    .getByLabel("URL", { exact: true })
+    .fill("https://example.com/outro");
+  await page.getByRole("button", { name: "Adicionar serviço" }).click();
+  await expect(page.getByRole("alert")).toHaveText(
+    "Já existe um serviço com esse nome",
+  );
+  await expect(page.getByLabel("Nome", { exact: true })).toHaveValue(nome);
+  await item.getByRole("button", { name: "Excluir" }).click();
+  await expect(item).toHaveCount(0);
+});
+
+test("mostra validação de nome vazio", async ({ page }) => {
   await page.goto("/");
   await page.getByLabel("URL", { exact: true }).fill("https://example.com");
   await page.getByRole("button", { name: "Adicionar serviço" }).click();
   await expect(page.getByRole("alert")).toHaveText("O nome é obrigatório.");
-  await expect(page.getByText("Nenhum serviço cadastrado.")).toBeVisible();
 });
 
-test("cadastra um serviço inativo em tela pequena", async ({ page }) => {
+test("cadastra serviço inativo em tela pequena", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
+  const nome = uniqueName();
   await page.goto("/");
-  await page.getByLabel("Nome", { exact: true }).fill("Notificações");
+  await page.getByLabel("Nome", { exact: true }).fill(nome);
   await page
     .getByLabel("URL", { exact: true })
-    .fill("https://example.com/notificacoes");
+    .fill("https://example.com/mobile");
   await page.getByLabel("Serviço ativo").uncheck();
   await page.getByRole("button", { name: "Adicionar serviço" }).click();
-  await expect(page.getByRole("listitem")).toContainText("Notificações");
-  await expect(page.getByRole("listitem")).toContainText("Inativo");
+  const item = page.getByRole("listitem").filter({ hasText: nome });
+  await expect(item).toContainText("Inativo");
+  await item.getByRole("button", { name: "Excluir" }).click();
+  await expect(item).toHaveCount(0);
 });
