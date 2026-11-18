@@ -1,0 +1,60 @@
+# Ambientes virtuais Python
+.venv/
+venv/
+env/
+
+# Bytecode e caches Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Empacotamento e arquivos gerados
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Dependencias e caches do frontend
+node_modules/
+.npm/
+.vite/
+
+# Cobertura de testes
+.coverage
+.coverage.*
+coverage/
+htmlcov/
+coverage.xml
+
+# Relatorios e artefatos de testes E2E
+playwright-report/
+test-results/
+blob-report/
+
+# Configuracoes locais por ambiente
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Arquivos locais de editores
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs e arquivos do sistema operacional
+*.log
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Dados locais de containers
+.docker-data/
+.postgres-data/
+
+# Manter versionados: poetry.lock, package-lock.json, migrations,
+# Dockerfiles, Makefile e exemplos de variaveis de ambiente.
