@@ -13,6 +13,8 @@ ajuda:
 	@echo "  make formatar         - formata o codigo Python"
 	@echo "  make conferir-formato - verifica a formatacao"
 	@echo "  make verificar        - executa as verificacoes iniciais"
+	@echo "  make rodar            - inicia a API em desenvolvimento"
+	@echo "  make testar           - executa os testes do backend"
 
 preparar:
 	 $(POETRY) install
@@ -32,4 +34,13 @@ formatar:
 conferir-formato:
 	 $(POETRY) run ruff format --check src tests
 
-verificar: validar lint conferir-formato
+
+.PHONY: rodar testar
+
+rodar:
+	 $(POETRY) run python -m uvicorn liga_api.main:app --reload
+
+testar:
+	 $(POETRY) run python -m pytest -q
+
+verificar: validar lint conferir-formato testar
