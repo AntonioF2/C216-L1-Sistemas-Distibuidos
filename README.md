@@ -8,11 +8,11 @@ O desenvolvimento está na branch `projeto-final`. A API possui consulta de saú
 
 A infraestrutura Docker desta etapa contém uma imagem própria para a API, PostgreSQL com volume persistente e verificações de saúde dos dois serviços. O Makefile oferece os comandos de preparação, execução e validação.
 
-O workflow de integração contínua está definido em `.github/workflows/qualidade-mesa.yml` para executar as verificações do backend no GitHub Actions. A execução remota será confirmada após enviar esse arquivo ao GitHub e consultar os resultados da aba Actions.
+O workflow de integração contínua em `.github/workflows/qualidade-mesa.yml` possui jobs de backend e frontend. Os resultados das execuções remotas ficam na aba Actions.
 
 A API armazena o catálogo e as partidas no PostgreSQL com SQLAlchemy e psycopg. Alembic cria e versiona as tabelas. Os placares registrados permanecem disponíveis após reiniciar a API.
 
-O agrupamento em simulações, a classificação acumulada e o frontend React são etapas posteriores.
+O frontend inicial em React funciona como um simulador independente com dados de demonstração. A conexão da interface com a API e o agrupamento em simulações ficam para as próximas etapas.
 
 ## Objetivo
 
@@ -211,5 +211,28 @@ make verificar
 O alvo `make verificar` valida a configuração do Poetry, o lint, a formatação e os testes Pytest. Uma falha em qualquer verificação reprova o job; o CI não aplica formatação automaticamente.
 
 O workflow é disparado por pushes para `projeto-final`, conforme a configuração atual do projeto. Ele utiliza os mesmos comandos Make executados localmente; abrir um PR não dispara uma execução adicional.
+
+O job de frontend executa o Biome, os testes Vitest com React Testing Library, o build do Vite e os testes Playwright no Chromium. Os testes de navegador desta etapa exercitam a interface de demonstração. O teste E2E com API e banco real fica para a integração final.
+
+## Frontend de demonstração
+
+Use Node.js 24 e execute na raiz do repositório:
+
+```text
+make frontend-preparar
+make frontend-rodar
+```
+
+Abra <http://127.0.0.1:5173>. A tela permite registrar, editar e excluir placares e recalcula a classificação dos quatro times fictícios. A cada recarga, o estado da tela volta aos placares de exemplo. A classificação ordena por pontos, vitórias, saldo de gols e gols marcados. Empates nesses critérios usam a ordem dos nomes.
+
+O frontend usa JavaScript, React, Vite e Tailwind CSS. Para verificar a interface:
+
+```text
+make frontend-verificar
+make frontend-instalar-navegador
+make frontend-e2e
+```
+
+A instalação do Chromium é necessária na primeira execução dos testes Playwright. Em Linux, caso faltem bibliotecas do navegador, use `make frontend-instalar-navegador-ci`.
 
 A suíte inclui os 41 casos de regras e API em memória e um teste de integração com PostgreSQL. Esse teste aplica a migração e verifica criação, consulta, edição e exclusão entre novas instâncias da API. O GitHub Actions fornece um PostgreSQL descartável. Para executar o teste localmente, configure `DB_*` para um PostgreSQL de teste e defina `MESA_TESTE_POSTGRES=1` antes de executar `make verificar`. Sem essa opção os 41 casos isolados são executados.

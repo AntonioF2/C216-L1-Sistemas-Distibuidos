@@ -2,6 +2,7 @@
 
 POETRY := poetry -C liga-api
 COMPOSE := docker compose
+NPM_FRONTEND := npm --prefix frontend
 
 .PHONY: ajuda preparar ambiente validar lint formatar conferir-formato verificar
 
@@ -16,6 +17,11 @@ ajuda:
 	@echo "  make verificar        - executa as verificacoes iniciais"
 	@echo "  make rodar            - inicia a API em desenvolvimento"
 	@echo "  make testar           - executa os testes do backend"
+	@echo "  make frontend-preparar   - instala as dependencias da interface"
+	@echo "  make frontend-rodar      - inicia o frontend local"
+	@echo "  make frontend-verificar  - executa lint, formato, testes e build"
+	@echo "  make frontend-instalar-navegador - instala Chromium para os testes"
+	@echo "  make frontend-e2e        - executa os testes no navegador"
 	@echo "  make banco-migrar     - aplica as migracoes no PostgreSQL do Compose"
 	@echo "  make banco-revisao    - mostra a revisao aplicada ao banco"
 	@echo "  make docker-configurar - cria .env local sem sobrescrever o existente"
@@ -56,6 +62,29 @@ testar:
 	 $(POETRY) run python -m pytest -q
 
 verificar: validar lint conferir-formato testar
+
+.PHONY: frontend-preparar frontend-rodar frontend-verificar frontend-instalar-navegador frontend-instalar-navegador-ci frontend-e2e
+
+frontend-preparar:
+	$(NPM_FRONTEND) ci
+
+frontend-rodar:
+	$(NPM_FRONTEND) run dev
+
+frontend-verificar:
+	$(NPM_FRONTEND) run lint
+	$(NPM_FRONTEND) run format:check
+	$(NPM_FRONTEND) test
+	$(NPM_FRONTEND) run build
+
+frontend-instalar-navegador:
+	$(NPM_FRONTEND) run e2e:instalar
+
+frontend-instalar-navegador-ci:
+	$(NPM_FRONTEND) run e2e:instalar-ci
+
+frontend-e2e:
+	$(NPM_FRONTEND) run test:e2e
 
 .PHONY: docker-configurar docker-validar docker-construir docker-subir docker-estado docker-logs docker-checar docker-verificar-volume docker-parar
 .PHONY: banco-migrar banco-revisao

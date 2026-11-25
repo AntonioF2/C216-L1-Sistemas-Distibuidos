@@ -1,0 +1,342 @@
+@import "tailwindcss";
+
+:root {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  color: #18271f;
+  background: #f1f2eb;
+  font-synthesis: none;
+}
+
+.limite {
+  width: min(100% - 64px, 1200px);
+  margin-inline: auto;
+}
+.barra {
+  background: #172820;
+  color: #fff;
+  border-bottom: 1px solid #2f4639;
+}
+.barra .limite {
+  min-height: 68px;
+}
+.marca {
+  font-weight: 750;
+  font-size: 1.1rem;
+  letter-spacing: -0.035em;
+}
+.marca-campo {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 25px;
+  border: 1.5px solid #d8f276;
+  border-radius: 5px;
+  background: linear-gradient(
+    90deg,
+    transparent 47%,
+    #d8f276 47% 53%,
+    transparent 53%
+  );
+}
+.marca-campo::after {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid #d8f276;
+  border-radius: 50%;
+  background: #172820;
+}
+.ambiente {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #506457;
+  border-radius: 24px;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  color: #ebf2dc;
+}
+.ambiente span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #d8f276;
+}
+.intro {
+  padding-block: 50px 35px;
+}
+.intro h1 {
+  font-size: clamp(2.65rem, 6vw, 4.65rem);
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.085em;
+}
+.intro h1 span {
+  color: #65833d;
+}
+.intro p {
+  color: #516158;
+  margin-top: 14px;
+}
+.quadro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 365px);
+  gap: 22px;
+  align-items: start;
+  padding-bottom: 48px;
+}
+.area-formulario {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+.painel {
+  overflow: hidden;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid #dfe4d9;
+}
+.cabecalho-painel {
+  padding: 20px 22px;
+}
+.cabecalho-painel h2,
+.formulario h2 {
+  font-weight: 750;
+  font-size: 1.35rem;
+  letter-spacing: -0.045em;
+}
+.nota {
+  color: #52635a;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.classificacao {
+  width: 100%;
+  min-width: 594px;
+  border-collapse: collapse;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.classificacao th,
+.classificacao td {
+  padding: 10px 7px;
+  text-align: center;
+  font-size: 0.85rem;
+}
+.classificacao thead th {
+  font-size: 0.73rem;
+  letter-spacing: 0.035em;
+}
+.classificacao th:first-child,
+.classificacao td:first-child {
+  padding-left: 16px;
+}
+.classificacao th:last-child,
+.classificacao td:last-child {
+  padding-right: 15px;
+}
+.classificacao thead {
+  background: #f0f3ed;
+  color: #435449;
+}
+.classificacao th:nth-child(2) {
+  text-align: left;
+  padding-left: 5px;
+}
+.classificacao abbr {
+  text-decoration: none;
+}
+.classificacao tbody tr {
+  border-bottom: 1px solid #edf0eb;
+}
+.classificacao tbody tr:first-child {
+  background: #f6f9ed;
+}
+.posicao {
+  color: #52635a;
+  font-weight: 700;
+}
+.classificacao .pontos {
+  background: #e9f2d6;
+  color: #2d431f;
+  font-weight: 800;
+}
+.selo {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 0.57rem;
+  font-weight: 850;
+  letter-spacing: 0.03em;
+}
+.selo--aurora {
+  background: #e2ebfc;
+  color: #273e6f;
+}
+.selo--uniao {
+  background: #f8e2d9;
+  color: #833b2b;
+}
+.selo--atletico {
+  background: #deeadd;
+  color: #345644;
+}
+.selo--estrela {
+  background: #faeecb;
+  color: #6c5015;
+}
+.rodape-painel {
+  margin: 0;
+  padding: 14px 22px;
+  font-size: 0.77rem;
+  color: #52635a;
+}
+.formulario-topo {
+  padding: 23px 22px 20px;
+  background: #213c2f;
+  color: #fff;
+}
+.formulario h2 {
+  font-size: 1.6rem;
+}
+.formulario-corpo {
+  padding: 21px 22px 23px;
+}
+.grade-placar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 91px;
+  gap: 14px 12px;
+}
+.campo {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  align-content: end;
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+.campo-rodada {
+  max-width: 112px;
+}
+.campo :is(input, select) {
+  width: 100%;
+  min-width: 0;
+  height: 43px;
+  border-radius: 8px;
+  border: 1px solid #cbd4c9;
+  padding-inline: 10px;
+  background-color: #fafbf8;
+  color: #22352a;
+  font-size: 0.84rem;
+  font-weight: 500;
+}
+.campo input::placeholder {
+  color: #627166;
+}
+button,
+select {
+  cursor: pointer;
+}
+:focus-visible {
+  outline: 2px solid #476d32;
+  outline-offset: 3px;
+}
+.botao-primario {
+  border-radius: 8px;
+  background: #d8f276;
+  color: #26361d;
+  padding: 11px 12px;
+  font-size: 0.85rem;
+  font-weight: 750;
+}
+.botao-primario:hover {
+  background: #c8e467;
+}
+.botao-secundario {
+  padding: 5px 8px;
+  border-radius: 6px;
+  color: #355341;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+.botao-secundario:hover {
+  background: #edf2e9;
+}
+.excluir {
+  color: #8d3c32;
+}
+.excluir:hover {
+  background: #faede8;
+}
+.erro,
+.mensagem-sucesso:not(:empty) {
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+}
+.erro {
+  background: #fbeae4;
+  color: #822f28;
+}
+.mensagem-sucesso:not(:empty) {
+  margin-top: 10px;
+  background: #e5efd8;
+  color: #35512d;
+}
+.lista-partidas {
+  list-style: none;
+}
+.partida {
+  display: grid;
+  grid-template-columns: minmax(76px, 1fr) auto minmax(119px, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 9px 20px;
+  border-top: 1px solid #edf0eb;
+}
+.rodada {
+  font-size: 0.75rem;
+  color: #52635a;
+}
+.confronto {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.placar {
+  min-width: 2.45rem;
+  text-align: center;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+.acoes {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 900px) {
+  .limite {
+    width: min(100% - 32px, 720px);
+  }
+  .quadro {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .area-formulario {
+    grid-area: auto;
+  }
+  .intro {
+    padding-block: 35px 27px;
+  }
+}
+
+@media (max-width: 410px) {
+  .partida {
+    padding-inline: 8px;
+    grid-template-columns: minmax(55px, 1fr) auto minmax(101px, 1fr);
+  }
+  .partida .botao-secundario {
+    padding-inline: 5px;
+  }
+}

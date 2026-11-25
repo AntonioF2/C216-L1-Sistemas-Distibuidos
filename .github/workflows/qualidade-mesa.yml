@@ -53,3 +53,30 @@ jobs:
 
       - name: Conferir a qualidade e executar os testes
         run: make verificar
+
+  verificar-frontend:
+    name: Frontend - qualidade, build e navegador
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Obter o projeto
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar e verificar a interface
+        run: |
+          make frontend-preparar
+          make frontend-verificar
+
+      - name: Verificar o fluxo no Chromium
+        run: |
+          make frontend-instalar-navegador-ci
+          make frontend-e2e
