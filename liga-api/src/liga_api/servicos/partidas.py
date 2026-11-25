@@ -1,5 +1,5 @@
 from liga_api.modelos.futebol import Partida, ResultadoPlacar, Time
-from liga_api.repositorios.memoria import CatalogoTimes, RepositorioPartidasEmMemoria
+from liga_api.repositorios.contratos import RepositorioPartidas, RepositorioTimes
 from liga_api.servicos.erros import RecursoNaoEncontrado, RegraPartidaInvalida
 
 
@@ -16,7 +16,7 @@ def apurar_placar(gols_mandante: int, gols_visitante: int) -> ResultadoPlacar:
 
 class ServicoPartidas:
     def __init__(
-        self, catalogo: CatalogoTimes, repositorio: RepositorioPartidasEmMemoria
+        self, catalogo: RepositorioTimes, repositorio: RepositorioPartidas
     ) -> None:
         self._catalogo = catalogo
         self._repositorio = repositorio
@@ -80,11 +80,7 @@ class ServicoPartidas:
         return self._detalhar(self._repositorio.adicionar(partida))
 
     def listar(self, rodada: int | None = None) -> list[dict[str, object]]:
-        return [
-            self._detalhar(partida)
-            for partida in self._repositorio.listar()
-            if rodada is None or partida.rodada == rodada
-        ]
+        return [self._detalhar(partida) for partida in self._repositorio.listar(rodada)]
 
     def obter(self, partida_id: int) -> dict[str, object]:
         partida = self._repositorio.obter(partida_id)

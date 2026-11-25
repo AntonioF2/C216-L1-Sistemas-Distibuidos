@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from liga_api.main import criar_app
+from tests.conftest import criar_app_de_teste
 
 
 @pytest.fixture
@@ -149,5 +149,5 @@ def test_nova_instancia_da_api_nao_herda_partidas_de_outra_instancia(
 ):
     assert cliente_api.get("/partidas").json() == [partida_registrada]
 
-    with TestClient(criar_app()) as outra_api:
+    with TestClient(criar_app_de_teste()) as outra_api:
         assert outra_api.get("/partidas").json() == []

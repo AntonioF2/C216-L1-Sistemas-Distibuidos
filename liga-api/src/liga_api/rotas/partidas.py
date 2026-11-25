@@ -1,17 +1,30 @@
+from collections.abc import Iterator
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request, Response, status
 
-from liga_api.schemas.partida import PartidaEntrada, PartidaSaida, TimeSaida
+from liga_api.repositorios.postgres import CatalogoPostgres, PartidasPostgres
+from liga_api.schemas.partida import (
+    LIMITE_INTEIRO,
+    PartidaEntrada,
+    PartidaSaida,
+    TimeSaida,
+)
 from liga_api.servicos.partidas import ServicoPartidas
 
 
-def obter_servico(requisicao: Request) -> ServicoPartidas:
-    return requisicao.app.state.servico_partidas
+def obter_servico(requisicao: Request) -> Iterator[ServicoPartidas]:
+    estado = requisicao.app.state
+    servico = getattr(estado, "servico_partidas", None)
+    if servico is not None:
+        yield servico
+        return
+    with estado.sessoes() as sessao:
+        yield ServicoPartidas(CatalogoPostgres(sessao), PartidasPostgres(sessao))
 
 
 ServicoDaRodada = Annotated[ServicoPartidas, Depends(obter_servico)]
-IdPartida = Annotated[int, Path(gt=0)]
+IdPartida = Annotated[int, Path(gt=0, le=LIMITE_INTEIRO)]
 
 router = APIRouter(tags=["Mesa da Rodada"])
 
@@ -31,7 +44,7 @@ def registrar_partida(dados: PartidaEntrada, servico: ServicoDaRodada):
 @router.get("/partidas", response_model=list[PartidaSaida])
 def listar_partidas(
     servico: ServicoDaRodada,
-    rodada: Annotated[int | None, Query(gt=0)] = None,
+    rodada: Annotated[int | None, Query(gt=0, le=LIMITE_INTEIRO)] = None,
 ):
     return servico.listar(rodada)
 

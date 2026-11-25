@@ -32,9 +32,13 @@ class RepositorioPartidasEmMemoria:
         self._sequencia = count(1)
         self._lock = Lock()
 
-    def listar(self) -> list[Partida]:
+    def listar(self, rodada: int | None = None) -> list[Partida]:
         with self._lock:
-            return list(self._partidas.values())
+            return [
+                partida
+                for partida in self._partidas.values()
+                if rodada is None or partida.rodada == rodada
+            ]
 
     def obter(self, partida_id: int) -> Partida | None:
         with self._lock:

@@ -28,9 +28,11 @@ WORKDIR /opt/mesa
 RUN useradd --create-home --uid 10001 mesa
 
 COPY --from=montagem --chown=mesa:mesa /opt/mesa /opt/mesa
+COPY --chown=mesa:mesa alembic.ini ./
+COPY --chown=mesa:mesa migracoes ./migracoes
 
 USER mesa
 
 EXPOSE 8000
 
-CMD ["python", "-m", "uvicorn", "liga_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "alembic upgrade head && exec python -m uvicorn liga_api.main:app --host 0.0.0.0 --port 8000"]

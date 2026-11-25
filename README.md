@@ -10,9 +10,9 @@ A infraestrutura Docker desta etapa contém uma imagem própria para a API, Post
 
 O workflow de integração contínua está definido em `.github/workflows/qualidade-mesa.yml` para executar as verificações do backend no GitHub Actions. A execução remota será confirmada após enviar esse arquivo ao GitHub e consultar os resultados da aba Actions.
 
-A arquitetura básica separa rotas, schemas de entrada e saída, serviços, repositórios e modelos de domínio. As partidas ficam em memória por instância da aplicação: reiniciar o servidor, recarregar o código ou recriar o contêiner apaga esses registros. Esta etapa deve ser executada com um único processo da API.
+A API armazena o catálogo e as partidas no PostgreSQL com SQLAlchemy e psycopg. Alembic cria e versiona as tabelas. Os placares registrados permanecem disponíveis após reiniciar a API.
 
-A classificação acumulada, o agrupamento em simulações, a persistência com SQLAlchemy e Alembic, as migrações e o frontend React ainda serão implementados. O volume do PostgreSQL está preparado, mas a API ainda não grava as partidas nele.
+O agrupamento em simulações, a classificação acumulada e o frontend React são etapas posteriores.
 
 ## Objetivo
 
@@ -64,10 +64,11 @@ A tabela terá como referência as colunas principais da tabela oficial da CBF.
 | Rotas | `liga-api/src/liga_api/rotas` | Receber HTTP, declarar métodos e respostas e traduzir erros de domínio |
 | Schemas | `liga-api/src/liga_api/schemas` | Validar a entrada com Pydantic e definir a resposta pública |
 | Serviços | `liga-api/src/liga_api/servicos` | Validar confrontos e calcular resultado e pontuação |
-| Repositórios | `liga-api/src/liga_api/repositorios` | Guardar e consultar as partidas em memória e disponibilizar o catálogo |
-| Modelos | `liga-api/src/liga_api/modelos` | Representar times, partidas e resultados sem depender de HTTP |
+| Repositórios | `liga-api/src/liga_api/repositorios` | Consultar times e executar o CRUD de partidas com SQLAlchemy |
+| Modelos | `liga-api/src/liga_api/modelos` | Representar o domínio e mapear as tabelas em classes ORM separadas |
+| Banco e migrações | `liga-api/src/liga_api/banco` e `liga-api/migracoes` | Configurar a conexão e versionar a estrutura do PostgreSQL |
 
-`main.py` monta a aplicação, os tratadores de erro e os routers. A função `criar_app()` fornece repositórios independentes para cada instância; os testes usam essa função para não compartilhar os dados entre casos. O repositório em memória será substituído na etapa de persistência.
+`main.py` monta a aplicação e configura o acesso ao banco. Cada requisição às rotas de times ou partidas recebe uma sessão de banco própria, encerrada ao fim do atendimento. Os testes isolados injetam repositórios em memória. O teste de integração usa os repositórios PostgreSQL.
 
 ## Endpoints disponíveis
 
@@ -81,7 +82,7 @@ A tabela terá como referência as colunas principais da tabela oficial da CBF.
 | PUT | `/partidas/{partida_id}` | Substitui os dados da partida e recalcula o resultado |
 | DELETE | `/partidas/{partida_id}` | Exclui a partida e retorna HTTP 204 sem corpo |
 
-Para experimentar, execute `make rodar` e abra <http://127.0.0.1:8000/docs>. Consulte `/times` e envie em `POST /partidas`:
+Para experimentar, execute `make docker-configurar` e `make docker-subir` na raiz e abra <http://127.0.0.1:8000/docs>. Consulte `/times` e envie em `POST /partidas`:
 
 ```json
 {
@@ -97,7 +98,7 @@ A resposta identifica o mandante como vencedor, com 3 pontos, e o visitante com 
 
 Os identificadores e a rodada devem ser inteiros positivos. Os gols devem ser inteiros não negativos: números fracionários, textos, booleanos e valores nulos são rejeitados. Campos desconhecidos no corpo também são rejeitados. Um clube não pode jogar contra si mesmo. Dados inválidos retornam HTTP 422; referências a times ou partidas inexistentes retornam HTTP 404.
 
-Essas operações ainda utilizam um cenário único em memória. O CRUD de simulações e a classificação geral não estão disponíveis nesta versão.
+As partidas são armazenadas em um cenário único. O CRUD de simulações e a classificação geral ficam para as próximas etapas.
 
 ## Execução e configuração
 
@@ -124,7 +125,7 @@ O comando preserva um `.env` já existente e não imprime a senha. `.env.example
 | `MESA_DB_USUARIO` | Usuário inicial do PostgreSQL local | `operador_mesa` |
 | `MESA_DB_SENHA` | Senha local obrigatória, gerada na preparação | Sem valor real no exemplo |
 
-As configurações `DB_HOST=banco-mesa`, `DB_PORT=5432`, `DB_NAME`, `DB_USER` e `DB_PASSWORD` são entregues ao contêiner da API para a futura integração. Disponibilizar essas variáveis não implementa a conexão com o banco.
+O Compose fornece `DB_HOST=banco-mesa`, `DB_PORT=5432`, `DB_NAME`, `DB_USER` e `DB_PASSWORD` à API e às migrações. A API usa essas configurações para se conectar ao PostgreSQL.
 
 As variáveis `POSTGRES_*` inicializam um volume novo. Alterar usuário, banco ou senha no `.env` depois da primeira execução não altera automaticamente as credenciais já armazenadas no PostgreSQL.
 
@@ -139,6 +140,15 @@ make docker-checar
 ```
 
 `docker-validar` verifica a configuração sem exibir as credenciais. `docker-subir` constrói a imagem e aguarda os dois serviços ficarem saudáveis. O primeiro build precisa de acesso à internet para obter as imagens e dependências.
+
+Após o banco ficar pronto, o contêiner da API aplica a revisão Alembic vigente antes de iniciar o Uvicorn. A primeira revisão cria `times` e `partidas`, liga os dois times da partida ao catálogo por chaves estrangeiras e insere os quatro clubes de demonstração.
+
+```text
+make banco-revisao
+make banco-migrar
+```
+
+Com a API em execução no Compose, o primeiro comando mostra a revisão aplicada e o segundo reaplica as migrações pendentes. Ao iniciar com `make docker-subir`, essa aplicação é automática. Para conferir a persistência, registre uma partida pelo Swagger, anote o ID, execute `make docker-parar` seguido de `make docker-subir` e consulte `GET /partidas/{partida_id}`.
 
 Com a porta padrão, acesse:
 
@@ -172,7 +182,7 @@ O primeiro comando verifica a resposta HTTP, o usuário sem privilégios de root
 
 O segundo comando cria um schema temporário de diagnóstico com um registro SQL, encerra e recria os contêineres deste projeto, verifica que o registro permanece e remove o schema de diagnóstico.
 
-Esse diagnóstico não cria tabelas do domínio nem substitui migrações Alembic. A persistência de simulações pela aplicação será implementada posteriormente.
+O diagnóstico de volume verifica a infraestrutura. O teste PostgreSQL da suíte verifica a persistência dos placares pela API.
 
 ## Preparação do ambiente Python
 
@@ -182,7 +192,7 @@ Execute os comandos na raiz do repositório:
 
 - `make preparar`: instala as dependências.
 - `make ambiente`: apresenta o ambiente virtual.
-- `make rodar`: inicia a API localmente, fora do Docker, em desenvolvimento.
+- `make rodar`: inicia a API fora do Docker. Requer um PostgreSQL acessível e migrado. Defina `DB_HOST`, `DB_NAME`, `DB_USER` e `DB_PASSWORD` no ambiente do processo e `DB_PORT` se a porta diferir de 5432. Para usar o PostgreSQL do Compose, execute `make docker-subir`.
 - `make testar`: executa os testes do backend.
 - `make verificar`: valida a configuração, o código, a formatação e os testes.
 - `make formatar`: aplica a formatação Python.
@@ -202,4 +212,4 @@ O alvo `make verificar` valida a configuração do Poetry, o lint, a formataçã
 
 O workflow é disparado por pushes para `projeto-final`, conforme a configuração atual do projeto. Ele utiliza os mesmos comandos Make executados localmente; abrir um PR não dispara uma execução adicional.
 
-A suíte atual possui 41 casos: 14 testes unitários de regras e serviços e 27 casos HTTP. Ela cobre vitória, empate, derrota, erros de placar, confronto do mesmo time, referências inexistentes, criação, filtro por rodada, consulta, edição, exclusão e isolamento entre instâncias da API. Os testes de saúde e documentação anteriores permanecem na suíte. Fixtures fornecem clientes e serviços independentes, e a parametrização cobre diferentes resultados e entradas inválidas.
+A suíte inclui os 41 casos de regras e API em memória e um teste de integração com PostgreSQL. Esse teste aplica a migração e verifica criação, consulta, edição e exclusão entre novas instâncias da API. O GitHub Actions fornece um PostgreSQL descartável. Para executar o teste localmente, configure `DB_*` para um PostgreSQL de teste e defina `MESA_TESTE_POSTGRES=1` antes de executar `make verificar`. Sem essa opção os 41 casos isolados são executados.

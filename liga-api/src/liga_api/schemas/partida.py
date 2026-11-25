@@ -2,8 +2,9 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-Identificador = Annotated[int, Field(strict=True, gt=0)]
-QuantidadeGols = Annotated[int, Field(strict=True, ge=0)]
+LIMITE_INTEIRO = 2_147_483_647
+InteiroPositivo = Annotated[int, Field(strict=True, gt=0, le=LIMITE_INTEIRO)]
+QuantidadeGols = Annotated[int, Field(strict=True, ge=0, le=LIMITE_INTEIRO)]
 
 
 class TimeSaida(BaseModel):
@@ -17,11 +18,11 @@ class TimeSaida(BaseModel):
 class PartidaEntrada(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    mandante_id: Identificador
-    visitante_id: Identificador
+    mandante_id: InteiroPositivo
+    visitante_id: InteiroPositivo
     gols_mandante: QuantidadeGols
     gols_visitante: QuantidadeGols
-    rodada: Annotated[int, Field(strict=True, gt=0)] = 1
+    rodada: InteiroPositivo = 1
 
 
 class PartidaSaida(BaseModel):

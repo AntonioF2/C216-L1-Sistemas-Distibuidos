@@ -16,6 +16,8 @@ ajuda:
 	@echo "  make verificar        - executa as verificacoes iniciais"
 	@echo "  make rodar            - inicia a API em desenvolvimento"
 	@echo "  make testar           - executa os testes do backend"
+	@echo "  make banco-migrar     - aplica as migracoes no PostgreSQL do Compose"
+	@echo "  make banco-revisao    - mostra a revisao aplicada ao banco"
 	@echo "  make docker-configurar - cria .env local sem sobrescrever o existente"
 	@echo "  make docker-validar   - valida a configuracao do Compose"
 	@echo "  make docker-construir - constroi a imagem da API"
@@ -36,13 +38,13 @@ validar:
 	 $(POETRY) check
 
 lint:
-	 $(POETRY) run ruff check src tests ../scripts
+	 $(POETRY) run ruff check src tests migracoes ../scripts
 
 formatar:
-	 $(POETRY) run ruff format src tests ../scripts
+	 $(POETRY) run ruff format src tests migracoes ../scripts
 
 conferir-formato:
-	 $(POETRY) run ruff format --check src tests ../scripts
+	 $(POETRY) run ruff format --check src tests migracoes ../scripts
 
 
 .PHONY: rodar testar
@@ -56,6 +58,13 @@ testar:
 verificar: validar lint conferir-formato testar
 
 .PHONY: docker-configurar docker-validar docker-construir docker-subir docker-estado docker-logs docker-checar docker-verificar-volume docker-parar
+.PHONY: banco-migrar banco-revisao
+
+banco-migrar:
+	$(COMPOSE) exec -T api-mesa alembic upgrade head
+
+banco-revisao:
+	$(COMPOSE) exec -T api-mesa alembic current
 
 docker-configurar:
 	python -c "from pathlib import Path; import secrets; destino = Path('.env'); modelo = Path('.env.example').read_text(encoding='utf-8'); conteudo = modelo.replace('MESA_DB_SENHA=', 'MESA_DB_SENHA=' + secrets.token_hex(24), 1); print('.env existente preservado.') if destino.exists() else (destino.write_text(conteudo, encoding='utf-8'), print('.env local criado com senha aleatoria.'))"

@@ -12,6 +12,27 @@ jobs:
     name: Backend - lint, formato e testes
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    env:
+      MESA_TESTE_POSTGRES: "1"
+      DB_HOST: "127.0.0.1"
+      DB_PORT: "5432"
+      DB_NAME: mesa_teste
+      DB_USER: mesa_ci
+      DB_PASSWORD: mesa_ci
+    services:
+      postgres:
+        image: postgres:17-bookworm
+        env:
+          POSTGRES_DB: mesa_teste
+          POSTGRES_USER: mesa_ci
+          POSTGRES_PASSWORD: mesa_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -h 127.0.0.1 -U mesa_ci -d mesa_teste"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
 
     steps:
       - name: Obter o projeto
