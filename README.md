@@ -8,6 +8,8 @@ O desenvolvimento está na branch `projeto-final`. Já estão implementados a AP
 
 A infraestrutura Docker desta etapa contém uma imagem própria para a API, PostgreSQL com volume persistente e verificações de saúde dos dois serviços. O Makefile oferece os comandos de preparação, execução e validação.
 
+O workflow de integração contínua está definido em `.github/workflows/qualidade-mesa.yml` para executar as verificações do backend no GitHub Actions. A execução remota será confirmada após enviar esse arquivo ao GitHub e consultar os resultados da aba Actions.
+
 As funcionalidades de times, partidas, classificação e CRUD de simulações descritas abaixo ainda são planejadas. A API ainda não executa consultas de negócio no banco: SQLAlchemy, Alembic, migrações e frontend React serão adicionados nas próximas etapas.
 
 ## Objetivo
@@ -106,8 +108,6 @@ Resposta esperada em `/saude`:
 {"status": "ok", "projeto": "Mesa da Rodada"}
 ```
 
-A rota `/` e o frontend ainda não foram implementados. Se outra execução local da API ocupar a porta 8000, encerre-a ou altere `MESA_API_PORTA` antes de subir os contêineres.
-
 Para consultar os logs ou encerrar o ambiente:
 
 ```text
@@ -126,7 +126,7 @@ make docker-verificar-volume
 
 O primeiro comando verifica a resposta HTTP, o usuário sem privilégios de root, a conexão TCP da API com `banco-mesa:5432` e uma consulta SQL no PostgreSQL. A conexão TCP confirma a rede entre serviços; não representa uma integração da aplicação com SQLAlchemy.
 
-O segundo comando cria um schema temporário de diagnóstico com um registro SQL, encerra e recria os contêineres deste projeto, verifica que o registro permanece e remove o schema de diagnóstico. Essa operação interrompe brevemente a API. O código fica em `scripts/verificar_docker.py` e utiliza somente a biblioteca padrão do Python e o Docker CLI.
+O segundo comando cria um schema temporário de diagnóstico com um registro SQL, encerra e recria os contêineres deste projeto, verifica que o registro permanece e remove o schema de diagnóstico.
 
 Esse diagnóstico não cria tabelas do domínio nem substitui migrações Alembic. A persistência de simulações pela aplicação será implementada posteriormente.
 
@@ -145,4 +145,15 @@ Execute os comandos na raiz do repositório:
 
 Execute `make preparar` antes das verificações locais em uma nova cópia do repositório. O lint e a formatação também incluem os scripts de infraestrutura. Os testes locais utilizam as dependências de desenvolvimento; a imagem Docker contém apenas as dependências de execução.
 
-As próximas etapas incluem as regras de classificação, a persistência com SQLAlchemy e Alembic, o CRUD de simulações, o frontend React e sua inclusão no Compose, além dos testes de integração, E2E e CI exigidos na entrega final.
+## Testes e integração contínua
+
+Para executar a mesma sequencia utilizada pelo CI:
+
+```text
+make preparar
+make verificar
+```
+
+O alvo `make verificar` valida a configuração do Poetry, o lint, a formatação e os testes Pytest. Uma falha em qualquer verificação reprova o job; o CI não aplica formatação automaticamente.
+
+Os gatilhos são pushes para `projeto-final` e Pull Requests com destino à `main`.
