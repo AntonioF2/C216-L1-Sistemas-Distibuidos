@@ -4,13 +4,15 @@ Projeto final da disciplina C216 — Sistemas Distribuídos. A proposta é desen
 
 ## Estado atual
 
-O desenvolvimento está na branch `projeto-final`. Já estão implementados a API mínima com `GET /saude`, seu teste automatizado e o ambiente Python gerenciado por Poetry.
+O desenvolvimento está na branch `projeto-final`. A API possui consulta de saúde, catálogo de times de demonstração e operações de criação, consulta, edição e exclusão de placares de partidas. Cada placar informa o vencedor ou empate e os pontos dos dois times.
 
 A infraestrutura Docker desta etapa contém uma imagem própria para a API, PostgreSQL com volume persistente e verificações de saúde dos dois serviços. O Makefile oferece os comandos de preparação, execução e validação.
 
 O workflow de integração contínua está definido em `.github/workflows/qualidade-mesa.yml` para executar as verificações do backend no GitHub Actions. A execução remota será confirmada após enviar esse arquivo ao GitHub e consultar os resultados da aba Actions.
 
-As funcionalidades de times, partidas, classificação e CRUD de simulações descritas abaixo ainda são planejadas. A API ainda não executa consultas de negócio no banco: SQLAlchemy, Alembic, migrações e frontend React serão adicionados nas próximas etapas.
+A arquitetura básica separa rotas, schemas de entrada e saída, serviços, repositórios e modelos de domínio. As partidas ficam em memória por instância da aplicação: reiniciar o servidor, recarregar o código ou recriar o contêiner apaga esses registros. Esta etapa deve ser executada com um único processo da API.
+
+A classificação acumulada, o agrupamento em simulações, a persistência com SQLAlchemy e Alembic, as migrações e o frontend React ainda serão implementados. O volume do PostgreSQL está preparado, mas a API ainda não grava as partidas nele.
 
 ## Objetivo
 
@@ -37,23 +39,65 @@ O CRUD principal será o de simulações, com todas as operações acessíveis p
 
 ### Time
 
-A classe `Time` representará um clube, com identificador, nome e sigla. Cada instância corresponderá a um time.
+A classe `Time` representa um clube, com identificador, nome e sigla. O catálogo atual contém quatro times fictícios para demonstração: Aurora Futebol Clube, União da Serra, Atlético do Vale e Estrela do Sul. Eles não representam o cadastro oficial de uma edição do Brasileirão.
 
 As estatísticas da classificação serão calculadas por time dentro de cada simulação. Elas não serão atributos globais do clube: um mesmo time poderá ter desempenhos diferentes em cenários distintos.
 
 ### Partida
 
-A classe `Partida` representará um confronto associado a uma simulação. Terá identificador, time mandante, time visitante, rodada e os gols de cada lado. Uma partida poderá estar pendente, sem placar, ou concluída, com os dois valores preenchidos.
+A classe `Partida` representa um confronto com identificador, rodada, mandante, visitante e gols dos dois lados. Nesta versão, somente partidas com placar completo podem ser registradas. O vínculo com uma simulação e o suporte a partidas pendentes ficam para etapas posteriores.
 
 O vencedor e o resultado de cada time serão derivados do placar, sem informar vitória ou derrota separadamente.
 
 ### Simulacao
 
-A classe `Simulacao` agrupará um cenário, seu nome e suas partidas. Os resultados pertencerão ao cenário em que foram registrados.
+A classe `Simulacao` ainda não foi implementada. Ela agrupará um cenário, seu nome e suas partidas. Os resultados pertencerão ao cenário em que forem registrados.
 
 ### Classificação por time
 
 A tabela terá como referência as colunas principais da tabela oficial da CBF.
+
+## Arquitetura básica da API
+
+| Camada | Diretório | Responsabilidade |
+| --- | --- | --- |
+| Rotas | `liga-api/src/liga_api/rotas` | Receber HTTP, declarar métodos e respostas e traduzir erros de domínio |
+| Schemas | `liga-api/src/liga_api/schemas` | Validar a entrada com Pydantic e definir a resposta pública |
+| Serviços | `liga-api/src/liga_api/servicos` | Validar confrontos e calcular resultado e pontuação |
+| Repositórios | `liga-api/src/liga_api/repositorios` | Guardar e consultar as partidas em memória e disponibilizar o catálogo |
+| Modelos | `liga-api/src/liga_api/modelos` | Representar times, partidas e resultados sem depender de HTTP |
+
+`main.py` monta a aplicação, os tratadores de erro e os routers. A função `criar_app()` fornece repositórios independentes para cada instância; os testes usam essa função para não compartilhar os dados entre casos. O repositório em memória será substituído na etapa de persistência.
+
+## Endpoints disponíveis
+
+| Método | Caminho | Comportamento |
+| --- | --- | --- |
+| GET | `/saude` | Verifica a disponibilidade da API |
+| GET | `/times` | Lista os quatro times de demonstração |
+| POST | `/partidas` | Cria um placar e retorna HTTP 201 |
+| GET | `/partidas` | Lista as partidas; aceita o filtro opcional `rodada` |
+| GET | `/partidas/{partida_id}` | Consulta uma partida pelo identificador |
+| PUT | `/partidas/{partida_id}` | Substitui os dados da partida e recalcula o resultado |
+| DELETE | `/partidas/{partida_id}` | Exclui a partida e retorna HTTP 204 sem corpo |
+
+Para experimentar, execute `make rodar` e abra <http://127.0.0.1:8000/docs>. Consulte `/times` e envie em `POST /partidas`:
+
+```json
+{
+  "mandante_id": 1,
+  "visitante_id": 2,
+  "gols_mandante": 2,
+  "gols_visitante": 1,
+  "rodada": 1
+}
+```
+
+A resposta identifica o mandante como vencedor, com 3 pontos, e o visitante com 0. Um empate atribui 1 ponto a cada lado. `GET /partidas?rodada=1` consulta somente aquela rodada. Ao editar, envie os dois times e os dois gols; a rodada tem valor padrão 1 quando omitida.
+
+Os identificadores e a rodada devem ser inteiros positivos. Os gols devem ser inteiros não negativos: números fracionários, textos, booleanos e valores nulos são rejeitados. Campos desconhecidos no corpo também são rejeitados. Um clube não pode jogar contra si mesmo. Dados inválidos retornam HTTP 422; referências a times ou partidas inexistentes retornam HTTP 404.
+
+Essas operações ainda utilizam um cenário único em memória. O CRUD de simulações e a classificação geral não estão disponíveis nesta versão.
 
 ## Execução e configuração
 
@@ -156,4 +200,6 @@ make verificar
 
 O alvo `make verificar` valida a configuração do Poetry, o lint, a formatação e os testes Pytest. Uma falha em qualquer verificação reprova o job; o CI não aplica formatação automaticamente.
 
-Os gatilhos são pushes para `projeto-final` e Pull Requests com destino à `main`.
+O workflow é disparado por pushes para `projeto-final`, conforme a configuração atual do projeto. Ele utiliza os mesmos comandos Make executados localmente; abrir um PR não dispara uma execução adicional.
+
+A suíte atual possui 41 casos: 14 testes unitários de regras e serviços e 27 casos HTTP. Ela cobre vitória, empate, derrota, erros de placar, confronto do mesmo time, referências inexistentes, criação, filtro por rodada, consulta, edição, exclusão e isolamento entre instâncias da API. Os testes de saúde e documentação anteriores permanecem na suíte. Fixtures fornecem clientes e serviços independentes, e a parametrização cobre diferentes resultados e entradas inválidas.
