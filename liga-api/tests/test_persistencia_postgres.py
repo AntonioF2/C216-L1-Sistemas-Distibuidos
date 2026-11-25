@@ -22,8 +22,8 @@ def banco_migrado():
 
 def test_placar_persiste_entre_instancias_da_api(banco_migrado):
     dados = {
-        "mandante_id": 1,
-        "visitante_id": 2,
+        "mandante_id": 13,
+        "visitante_id": 18,
         "gols_mandante": 2,
         "gols_visitante": 1,
         "rodada": 3,
@@ -31,8 +31,43 @@ def test_placar_persiste_entre_instancias_da_api(banco_migrado):
     caminho = None
     try:
         with TestClient(criar_app()) as cliente:
-            times = cliente.get("/times").json()
-            assert times[0]["sigla"] == "AUR"
+            resposta_times = cliente.get("/times")
+            assert resposta_times.status_code == 200
+            times = resposta_times.json()
+            assert {time["sigla"] for time in times} == {
+                "CAP",
+                "CAM",
+                "BAH",
+                "BOT",
+                "CHA",
+                "COR",
+                "CFC",
+                "CRU",
+                "FLA",
+                "FLU",
+                "GRE",
+                "INT",
+                "MIR",
+                "PAL",
+                "RBB",
+                "REM",
+                "SAN",
+                "SAO",
+                "VAS",
+                "VIT",
+            }
+            assert len(times) == 20
+            for time in times:
+                escudo_url = f"/escudos/{time['sigla'].lower()}.png"
+                assert time["escudo_url"] == escudo_url
+                escudo = cliente.get(escudo_url)
+                assert escudo.status_code == 200
+                assert escudo.headers["content-type"] == "image/png"
+                assert escudo.content.startswith(b"\x89PNG\r\n\x1a\n")
+            assert (
+                cliente.post("/partidas", json={**dados, "mandante_id": 1}).status_code
+                == 404
+            )
             criacao = cliente.post("/partidas", json=dados)
             assert criacao.status_code == 201
             caminho = f"/partidas/{criacao.json()['id']}"
@@ -40,7 +75,8 @@ def test_placar_persiste_entre_instancias_da_api(banco_migrado):
         with TestClient(criar_app()) as cliente:
             consulta = cliente.get(caminho)
             assert consulta.status_code == 200
-            assert consulta.json()["vencedor_id"] == 1
+            assert consulta.json()["vencedor_id"] == dados["mandante_id"]
+            assert consulta.json()["mandante"]["escudo_url"] == "/escudos/fla.png"
             assert criacao.json()["id"] in {
                 partida["id"]
                 for partida in cliente.get("/partidas", params={"rodada": 3}).json()

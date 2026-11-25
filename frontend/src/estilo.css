@@ -46,22 +46,6 @@
   border-radius: 50%;
   background: #172820;
 }
-.ambiente {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid #506457;
-  border-radius: 24px;
-  padding: 6px 12px;
-  font-size: 0.75rem;
-  color: #ebf2dc;
-}
-.ambiente span {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #d8f276;
-}
 .intro {
   padding-block: 50px 35px;
 }
@@ -80,14 +64,21 @@
 }
 .quadro {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 365px);
+  grid-template-columns: minmax(0, 1fr) minmax(355px, 445px);
   gap: 22px;
   align-items: start;
   padding-bottom: 48px;
 }
 .area-formulario {
   grid-column: 2;
-  grid-row: 1 / span 2;
+  grid-row: 1;
+}
+.area-classificacao {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  display: grid;
+  gap: 22px;
 }
 .painel {
   overflow: hidden;
@@ -99,7 +90,7 @@
   padding: 20px 22px;
 }
 .cabecalho-painel h2,
-.formulario h2 {
+.confrontos h2 {
   font-weight: 750;
   font-size: 1.35rem;
   letter-spacing: -0.045em;
@@ -108,6 +99,10 @@
   color: #52635a;
   font-size: 0.8rem;
   white-space: nowrap;
+}
+.tabela-rolavel {
+  max-height: 440px;
+  overflow: auto;
 }
 .classificacao {
   width: 100%;
@@ -135,6 +130,8 @@
   padding-right: 15px;
 }
 .classificacao thead {
+  position: sticky;
+  top: 0;
   background: #f0f3ed;
   color: #435449;
 }
@@ -160,32 +157,11 @@
   color: #2d431f;
   font-weight: 800;
 }
-.selo {
-  display: inline-grid;
-  place-items: center;
+.escudo {
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
-  width: 34px;
-  height: 28px;
-  border-radius: 6px;
-  font-size: 0.57rem;
-  font-weight: 850;
-  letter-spacing: 0.03em;
-}
-.selo--aurora {
-  background: #e2ebfc;
-  color: #273e6f;
-}
-.selo--uniao {
-  background: #f8e2d9;
-  color: #833b2b;
-}
-.selo--atletico {
-  background: #deeadd;
-  color: #345644;
-}
-.selo--estrela {
-  background: #faeecb;
-  color: #6c5015;
+  object-fit: contain;
 }
 .rodape-painel {
   margin: 0;
@@ -193,51 +169,107 @@
   font-size: 0.77rem;
   color: #52635a;
 }
-.formulario-topo {
-  padding: 23px 22px 20px;
+button {
+  cursor: pointer;
+}
+.confrontos-topo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(135px, 160px);
+  align-items: center;
+  gap: 8px 12px;
+  padding: 17px 20px;
   background: #213c2f;
   color: #fff;
 }
-.formulario h2 {
-  font-size: 1.6rem;
+.confrontos-contagem {
+  grid-column: 1 / -1;
+  color: #d8e6d9;
+  font-size: 0.8rem;
 }
-.formulario-corpo {
-  padding: 21px 22px 23px;
+.lista-confrontos {
+  list-style: none;
 }
-.grade-placar {
+.lista-confrontos li + li {
+  border-top: 1px solid #edf0eb;
+}
+.jogo-da-rodada {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 91px;
-  gap: 14px 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 20px;
 }
-.campo {
-  min-width: 0;
+.times-do-jogo {
   display: grid;
-  gap: 6px;
-  align-content: end;
-  font-size: 0.75rem;
+  gap: 4px;
+}
+.time-do-jogo {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 46px;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.82rem;
   font-weight: 650;
 }
-.campo-rodada {
-  max-width: 112px;
+.time-do-jogo .escudo {
+  width: 22px;
+  height: 22px;
 }
-.campo :is(input, select) {
-  width: 100%;
-  min-width: 0;
-  height: 43px;
-  border-radius: 8px;
+.jogo-da-rodada button {
+  min-width: 82px;
+  min-height: 40px;
+}
+.seletor {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 36px;
   border: 1px solid #cbd4c9;
-  padding-inline: 10px;
-  background-color: #fafbf8;
+  border-radius: 8px;
+  background: #fafbf8;
+}
+.seletor button {
+  display: grid;
+  min-height: 38px;
+  place-items: center;
+  border-radius: 7px;
+  color: #284734;
+  font-size: 1.18rem;
+}
+.seletor button:disabled {
+  color: #8a988b;
+  cursor: default;
+}
+.seletor button:not(:disabled):hover {
+  background: #e5efd8;
+}
+.seletor-valor {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
   color: #22352a;
-  font-size: 0.84rem;
-  font-weight: 500;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
 }
-.campo input::placeholder {
-  color: #627166;
+.time-do-jogo input {
+  min-width: 0;
+  width: 100%;
+  height: 34px;
+  border-radius: 7px;
+  border: 1px solid #cbd4c9;
+  padding-inline: 4px;
+  appearance: textfield;
+  text-align: center;
+  background: #fafbf8;
+  font-variant-numeric: tabular-nums;
 }
-button,
-select {
-  cursor: pointer;
+.time-do-jogo input::-webkit-inner-spin-button,
+.time-do-jogo input::-webkit-outer-spin-button {
+  appearance: none;
+}
+.confrontos-topo :focus-visible {
+  outline-color: #d8f276;
 }
 :focus-visible {
   outline: 2px solid #476d32;
@@ -270,20 +302,16 @@ select {
 .excluir:hover {
   background: #faede8;
 }
-.erro,
-.mensagem-sucesso:not(:empty) {
+.erro {
+  grid-column: 1 / -1;
   padding: 9px 12px;
   border-radius: 8px;
   font-size: 0.8rem;
-}
-.erro {
   background: #fbeae4;
   color: #822f28;
 }
-.mensagem-sucesso:not(:empty) {
-  margin-top: 10px;
-  background: #e5efd8;
-  color: #35512d;
+.placar-registrado {
+  border: 1px solid #cbd4c9;
 }
 .lista-partidas {
   list-style: none;
@@ -323,7 +351,8 @@ select {
   .quadro {
     grid-template-columns: minmax(0, 1fr);
   }
-  .area-formulario {
+  .area-formulario,
+  .area-classificacao {
     grid-area: auto;
   }
   .intro {
@@ -332,6 +361,10 @@ select {
 }
 
 @media (max-width: 410px) {
+  .confrontos-topo,
+  .jogo-da-rodada {
+    padding-inline: 12px;
+  }
   .partida {
     padding-inline: 8px;
     grid-template-columns: minmax(55px, 1fr) auto minmax(101px, 1fr);

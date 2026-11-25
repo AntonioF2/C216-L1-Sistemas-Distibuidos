@@ -1,6 +1,8 @@
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
+
+from liga_api.escudos import url_escudo
 
 LIMITE_INTEIRO = 2_147_483_647
 InteiroPositivo = Annotated[int, Field(strict=True, gt=0, le=LIMITE_INTEIRO)]
@@ -13,6 +15,11 @@ class TimeSaida(BaseModel):
     id: int
     nome: str
     sigla: str
+
+    @computed_field
+    @property
+    def escudo_url(self) -> str | None:
+        return url_escudo(self.sigla)
 
 
 class PartidaEntrada(BaseModel):

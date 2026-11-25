@@ -1,35 +1,24 @@
 export const times = [
-  { id: 1, nome: "Aurora Futebol Clube", sigla: "AUR", cor: "aurora" },
-  { id: 2, nome: "União da Serra", sigla: "USE", cor: "uniao" },
-  { id: 3, nome: "Atlético do Vale", sigla: "AVA", cor: "atletico" },
-  { id: 4, nome: "Estrela do Sul", sigla: "ESU", cor: "estrela" },
-];
-
-export const partidasIniciais = [
-  {
-    id: 1,
-    rodada: 1,
-    mandante_id: 1,
-    visitante_id: 2,
-    gols_mandante: 2,
-    gols_visitante: 1,
-  },
-  {
-    id: 2,
-    rodada: 1,
-    mandante_id: 3,
-    visitante_id: 4,
-    gols_mandante: 1,
-    gols_visitante: 1,
-  },
-  {
-    id: 3,
-    rodada: 2,
-    mandante_id: 4,
-    visitante_id: 2,
-    gols_mandante: 2,
-    gols_visitante: 0,
-  },
+  { id: 5, nome: "Athletico Paranaense", sigla: "CAP" },
+  { id: 6, nome: "Atlético Mineiro", sigla: "CAM" },
+  { id: 7, nome: "Bahia", sigla: "BAH" },
+  { id: 8, nome: "Botafogo", sigla: "BOT" },
+  { id: 9, nome: "Chapecoense", sigla: "CHA" },
+  { id: 10, nome: "Corinthians", sigla: "COR" },
+  { id: 11, nome: "Coritiba", sigla: "CFC" },
+  { id: 12, nome: "Cruzeiro", sigla: "CRU" },
+  { id: 13, nome: "Flamengo", sigla: "FLA" },
+  { id: 14, nome: "Fluminense", sigla: "FLU" },
+  { id: 15, nome: "Grêmio", sigla: "GRE" },
+  { id: 16, nome: "Internacional", sigla: "INT" },
+  { id: 17, nome: "Mirassol", sigla: "MIR" },
+  { id: 18, nome: "Palmeiras", sigla: "PAL" },
+  { id: 19, nome: "Red Bull Bragantino", sigla: "RBB" },
+  { id: 20, nome: "Remo", sigla: "REM" },
+  { id: 21, nome: "Santos", sigla: "SAN" },
+  { id: 22, nome: "São Paulo", sigla: "SAO" },
+  { id: 23, nome: "Vasco da Gama", sigla: "VAS" },
+  { id: 24, nome: "Vitória", sigla: "VIT" },
 ];
 
 export function calcularClassificacao(catalogo, partidas) {

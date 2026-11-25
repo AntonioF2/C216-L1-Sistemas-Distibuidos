@@ -6,16 +6,16 @@ from liga_api.modelos.futebol import Partida, Time
 
 
 class CatalogoTimes:
-    """Clubes ficticios para exercitar a API sem depender de dados externos."""
+    """Catálogo mínimo para testes sem banco."""
 
     def __init__(self) -> None:
         self._times = {
             time.id: time
             for time in (
-                Time(1, "Aurora Futebol Clube", "AUR"),
-                Time(2, "Uniao da Serra", "USE"),
-                Time(3, "Atletico do Vale", "AVA"),
-                Time(4, "Estrela do Sul", "ESU"),
+                Time(1, "Mandante de teste", "MDT"),
+                Time(2, "Visitante de teste", "VST"),
+                Time(3, "Terceiro time de teste", "TTT"),
+                Time(4, "Quarto time de teste", "QTT"),
             )
         }
 

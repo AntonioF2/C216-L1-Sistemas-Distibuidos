@@ -4,7 +4,7 @@ Projeto final da disciplina C216 — Sistemas Distribuídos. A proposta é desen
 
 ## Estado atual
 
-O desenvolvimento está na branch `projeto-final`. A API possui consulta de saúde, catálogo de times de demonstração e operações de criação, consulta, edição e exclusão de placares de partidas. Cada placar informa o vencedor ou empate e os pontos dos dois times.
+O desenvolvimento está na branch `projeto-final`. A API possui consulta de saúde, catálogo da Série A de 2026 e operações de criação, consulta, edição e exclusão de placares de partidas. Cada placar informa o vencedor ou empate e os pontos dos dois times.
 
 A infraestrutura Docker desta etapa contém uma imagem própria para a API, PostgreSQL com volume persistente e verificações de saúde dos dois serviços. O Makefile oferece os comandos de preparação, execução e validação.
 
@@ -12,7 +12,7 @@ O workflow de integração contínua em `.github/workflows/qualidade-mesa.yml` p
 
 A API armazena o catálogo e as partidas no PostgreSQL com SQLAlchemy e psycopg. Alembic cria e versiona as tabelas. Os placares registrados permanecem disponíveis após reiniciar a API.
 
-O frontend inicial em React funciona como um simulador independente com dados de demonstração. A conexão da interface com a API e o agrupamento em simulações ficam para as próximas etapas.
+O frontend em React funciona como um simulador independente com os confrontos do Brasileirão Série A de 2026. A conexão da interface com a API e o agrupamento em simulações ficam para as próximas etapas.
 
 ## Objetivo
 
@@ -39,7 +39,7 @@ O CRUD principal será o de simulações, com todas as operações acessíveis p
 
 ### Time
 
-A classe `Time` representa um clube, com identificador, nome e sigla. O catálogo atual contém quatro times fictícios para demonstração: Aurora Futebol Clube, União da Serra, Atlético do Vale e Estrela do Sul. Eles não representam o cadastro oficial de uma edição do Brasileirão.
+A classe `Time` representa um clube, com identificador, nome e sigla. O catálogo ativo contém os 20 participantes do Brasileirão Série A de 2026. [Clubes participantes na CBF](https://www.cbf.com.br/futebol-brasileiro/times/campeonato-brasileiro/serie-a/2026)
 
 As estatísticas da classificação serão calculadas por time dentro de cada simulação. Elas não serão atributos globais do clube: um mesmo time poderá ter desempenhos diferentes em cenários distintos.
 
@@ -75,19 +75,24 @@ A tabela terá como referência as colunas principais da tabela oficial da CBF.
 | Método | Caminho | Comportamento |
 | --- | --- | --- |
 | GET | `/saude` | Verifica a disponibilidade da API |
-| GET | `/times` | Lista os quatro times de demonstração |
+| GET | `/times` | Lista os 20 clubes da Série A de 2026 com nome, sigla e URL do escudo |
+| GET | `/escudos/{sigla}.png` | Serve o escudo PNG do clube, com a sigla em minúsculas |
 | POST | `/partidas` | Cria um placar e retorna HTTP 201 |
 | GET | `/partidas` | Lista as partidas; aceita o filtro opcional `rodada` |
 | GET | `/partidas/{partida_id}` | Consulta uma partida pelo identificador |
 | PUT | `/partidas/{partida_id}` | Substitui os dados da partida e recalcula o resultado |
 | DELETE | `/partidas/{partida_id}` | Exclui a partida e retorna HTTP 204 sem corpo |
 
-Para experimentar, execute `make docker-configurar` e `make docker-subir` na raiz e abra <http://127.0.0.1:8000/docs>. Consulte `/times` e envie em `POST /partidas`:
+Para ver o catálogo, execute `make docker-configurar` e `make docker-subir` na raiz e abra <http://127.0.0.1:8000/times>. O campo `escudo_url` é um caminho relativo à origem da API, como `/escudos/fla.png`. Os times históricos sem escudo retornam `null` nesse campo.
+
+Os escudos são arquivos PNG locais com transparência, disponíveis também na classificação e na lista de partidas. As imagens têm como fonte o [simulador do ge de 2026](https://ge.globo.com/futebol/brasileirao-serie-a/simulador-do-brasileirao-2026/). Os escudos identificam seus respectivos clubes.
+
+Para registrar um placar, abra <http://127.0.0.1:8000/docs> e envie em `POST /partidas`:
 
 ```json
 {
-  "mandante_id": 1,
-  "visitante_id": 2,
+  "mandante_id": 13,
+  "visitante_id": 18,
   "gols_mandante": 2,
   "gols_visitante": 1,
   "rodada": 1
@@ -141,7 +146,7 @@ make docker-checar
 
 `docker-validar` verifica a configuração sem exibir as credenciais. `docker-subir` constrói a imagem e aguarda os dois serviços ficarem saudáveis. O primeiro build precisa de acesso à internet para obter as imagens e dependências.
 
-Após o banco ficar pronto, o contêiner da API aplica a revisão Alembic vigente antes de iniciar o Uvicorn. A primeira revisão cria `times` e `partidas`, liga os dois times da partida ao catálogo por chaves estrangeiras e insere os quatro clubes de demonstração.
+Após o banco ficar pronto, o contêiner da API aplica as revisões do Alembic antes de iniciar o Uvicorn. A revisão `002_catalogo_serie_a_2026` insere os 20 clubes e arquiva os quatro times de demonstração. Partidas antigas com esses times continuam consultáveis, e os cadastros novos usam o catálogo ativo.
 
 ```text
 make banco-revisao
@@ -223,7 +228,9 @@ make frontend-preparar
 make frontend-rodar
 ```
 
-Abra <http://127.0.0.1:5173>. A tela permite registrar, editar e excluir placares e recalcula a classificação dos quatro times fictícios. A cada recarga, o estado da tela volta aos placares de exemplo. A classificação ordena por pontos, vitórias, saldo de gols e gols marcados. Empates nesses critérios usam a ordem dos nomes.
+Abra <http://127.0.0.1:5173>. A tela começa na Rodada 1 e apresenta os 10 confrontos da rodada selecionada, com mandante, visitante e escudos. Use as setas para navegar pelas 38 rodadas e registre os gols em cada confronto. Os jogos seguem a [tabela básica da CBF para a Série A de 2026](https://stcbfsiteprdimgbrs.blob.core.windows.net/img-site/cdn/Tabela_BA_sica_Brasileiro_SA_rie_A_2026_d64996b4d8.pdf).
+
+A classificação é recalculada ao registrar, atualizar ou excluir um placar. Os resultados são simulados e ficam disponíveis até recarregar a página. A classificação ordena por pontos, vitórias, saldo de gols e gols marcados. Empates nesses critérios usam a ordem dos nomes.
 
 O frontend usa JavaScript, React, Vite e Tailwind CSS. Para verificar a interface:
 

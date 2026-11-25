@@ -6,6 +6,7 @@ class Time:
     id: int
     nome: str
     sigla: str
+    ativo: bool = True
 
 
 @dataclass(frozen=True)

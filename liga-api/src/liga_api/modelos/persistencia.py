@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, Identity, String
+from sqlalchemy import ForeignKey, Identity, String, true
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -12,6 +12,7 @@ class TimeORM(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=False)
     nome: Mapped[str] = mapped_column(String(100))
     sigla: Mapped[str] = mapped_column(String(3), unique=True)
+    ativo: Mapped[bool] = mapped_column(server_default=true())
 
 
 class PartidaORM(Base):

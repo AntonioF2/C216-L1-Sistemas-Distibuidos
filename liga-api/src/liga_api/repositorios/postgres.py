@@ -23,7 +23,9 @@ class CatalogoPostgres:
         self._sessao = sessao
 
     def listar(self) -> list[Time]:
-        registros = self._sessao.scalars(select(TimeORM).order_by(TimeORM.id))
+        registros = self._sessao.scalars(
+            select(TimeORM).where(TimeORM.ativo.is_(True)).order_by(TimeORM.id)
+        )
         return [
             Time(registro.id, registro.nome, registro.sigla) for registro in registros
         ]
@@ -32,7 +34,7 @@ class CatalogoPostgres:
         registro = self._sessao.get(TimeORM, time_id)
         if registro is None:
             return None
-        return Time(registro.id, registro.nome, registro.sigla)
+        return Time(registro.id, registro.nome, registro.sigla, registro.ativo)
 
 
 class PartidasPostgres:

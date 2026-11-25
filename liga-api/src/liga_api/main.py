@@ -1,9 +1,11 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import sessionmaker
 
 from liga_api.banco.conexao import criar_motor
+from liga_api.escudos import DIRETORIO_ESCUDOS, ROTA_ESCUDOS
 from liga_api.rotas.erros import tratar_erro_de_dominio
 from liga_api.rotas.partidas import router as partidas_router
 from liga_api.rotas.saude import router as saude_router
@@ -36,6 +38,9 @@ def criar_app(servico: ServicoPartidas | None = None) -> FastAPI:
     aplicacao.add_exception_handler(RegraPartidaInvalida, tratar_erro_de_dominio)
     aplicacao.include_router(saude_router)
     aplicacao.include_router(partidas_router)
+    aplicacao.mount(
+        ROTA_ESCUDOS, StaticFiles(directory=DIRETORIO_ESCUDOS), name="escudos"
+    )
     return aplicacao
 
 

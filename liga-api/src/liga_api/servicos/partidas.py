@@ -40,8 +40,9 @@ class ServicoPartidas:
                 )
         if partida.mandante_id == partida.visitante_id:
             raise RegraPartidaInvalida("Um time nao pode enfrentar a si mesmo.")
-        self._obter_time(partida.mandante_id)
-        self._obter_time(partida.visitante_id)
+        for time_id in (partida.mandante_id, partida.visitante_id):
+            if not self._obter_time(time_id).ativo:
+                raise RecursoNaoEncontrado(f"Time {time_id} fora do catalogo ativo.")
         apurar_placar(partida.gols_mandante, partida.gols_visitante)
 
     def _detalhar(self, partida: Partida) -> dict[str, object]:

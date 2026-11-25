@@ -2,13 +2,31 @@ import { calcularClassificacao, times } from "../campeonato.js";
 
 export function SeloTime({ time }) {
   return (
-    <span className={`selo selo--${time.cor}`} aria-hidden="true">
-      {time.sigla}
-    </span>
+    <img
+      className="escudo"
+      src={`${import.meta.env.BASE_URL}escudos/${time.sigla.toLowerCase()}.png`}
+      alt=""
+      width="32"
+      height="32"
+    />
   );
 }
 
 const percentual = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
+
+const colunas = [
+  ["#", "Posição na tabela"],
+  ["Clube"],
+  ["PTS", "Pontos"],
+  ["J", "Jogos disputados"],
+  ["V", "Vitórias"],
+  ["E", "Empates"],
+  ["D", "Derrotas"],
+  ["GP", "Gols pró (marcados)"],
+  ["GC", "Gols contra (sofridos)"],
+  ["SG", "Saldo de gols (GP − GC)"],
+  ["%", "Aproveitamento dos pontos possíveis"],
+];
 
 export default function Classificacao({ partidas }) {
   const tabela = calcularClassificacao(times, partidas);
@@ -19,39 +37,23 @@ export default function Classificacao({ partidas }) {
         <h2 id="titulo-classificacao">Classificação</h2>
         <span className="nota">{times.length} clubes</span>
       </div>
-      <div className="overflow-x-auto">
+      <div className="tabela-rolavel">
         <table className="classificacao" aria-labelledby="titulo-classificacao">
           <thead>
             <tr>
-              <th scope="col">#</th>
-              <th scope="col">Clube</th>
-              <th scope="col" className="pontos">
-                PTS
-              </th>
-              <th scope="col">
-                <abbr title="Jogos">J</abbr>
-              </th>
-              <th scope="col">
-                <abbr title="Vitórias">V</abbr>
-              </th>
-              <th scope="col">
-                <abbr title="Empates">E</abbr>
-              </th>
-              <th scope="col">
-                <abbr title="Derrotas">D</abbr>
-              </th>
-              <th scope="col">
-                <abbr title="Gols pró">GP</abbr>
-              </th>
-              <th scope="col">
-                <abbr title="Gols contra">GC</abbr>
-              </th>
-              <th scope="col">
-                <abbr title="Saldo de gols">SG</abbr>
-              </th>
-              <th scope="col">
-                <abbr title="Aproveitamento">%</abbr>
-              </th>
+              {colunas.map(([sigla, significado]) => (
+                <th
+                  key={sigla}
+                  scope="col"
+                  className={sigla === "PTS" ? "pontos" : undefined}
+                >
+                  {significado ? (
+                    <abbr title={significado}>{sigla}</abbr>
+                  ) : (
+                    sigla
+                  )}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -81,9 +83,20 @@ export default function Classificacao({ partidas }) {
           </tbody>
         </table>
       </div>
-      <p className="rodape-painel">
-        Vitória 3 pts · Empate 1 pt · Derrota 0 pts
-      </p>
+      <div className="rodape-painel space-y-2">
+        <h3 className="text-sm font-bold">Legenda da classificação</h3>
+        <dl className="flex flex-wrap gap-x-4 gap-y-1.5">
+          {colunas
+            .filter(([, significado]) => significado)
+            .map(([sigla, significado]) => (
+              <div key={sigla} className="flex items-baseline gap-1.5">
+                <dt className="font-bold">{sigla}</dt>
+                <dd>{significado}</dd>
+              </div>
+            ))}
+        </dl>
+        <p>Vitória vale 3 pontos, empate vale 1 e derrota vale 0.</p>
+      </div>
     </section>
   );
 }
