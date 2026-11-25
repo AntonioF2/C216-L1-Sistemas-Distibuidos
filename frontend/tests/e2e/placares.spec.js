@@ -17,47 +17,95 @@ test("carrega os PNGs dos 20 times na classificação", async ({ page }) => {
     .toBe(true);
 });
 
-test("registra, edita e exclui um placar do calendário", async ({ page }) => {
+test("salva os dez placares de uma rodada, edita e exclui um resultado", async ({
+  page,
+}) => {
   await page.goto("/");
   const painel = page.getByRole("region", { name: "Confrontos" });
-  const jogo = painel.getByRole("form", { name: "Fluminense x Grêmio" });
+  const formulario = painel.getByRole("form", { name: "Placares da rodada" });
+  const jogo = formulario.getByRole("group", { name: "Fluminense x Grêmio" });
   const mandante = jogo.getByLabel("Gols do mandante");
   const visitante = jogo.getByLabel("Gols do visitante");
   const lista = page.getByRole("region", { name: "Partidas registradas" });
+  const salvar = formulario.getByRole("button", {
+    name: "Salvar placares da rodada",
+  });
 
+  for (const confronto of await formulario.getByRole("group").all()) {
+    await confronto.getByLabel("Gols do mandante").fill("0");
+    await confronto.getByLabel("Gols do visitante").fill("0");
+  }
   await mandante.fill("2");
   await visitante.fill("1");
-  await jogo.getByRole("button", { name: "Salvar" }).click();
+  await salvar.click();
+  await expect(page.getByRole("status")).toHaveText(
+    "10 placares salvos na rodada.",
+  );
+  await expect(lista.getByRole("listitem")).toHaveCount(10);
+  await expect(painel.getByText("10 de 10 placares registrados")).toBeVisible();
   await painel.getByRole("button", { name: "Próxima rodada" }).click();
   await expect(jogo).toHaveCount(0);
 
-  await lista.getByRole("button", { name: "Editar" }).click();
+  const resultado = (placar) =>
+    lista.getByRole("listitem").filter({ hasText: placar });
+  await resultado("2 × 1").getByRole("button", { name: "Editar" }).click();
   await expect(mandante).toBeFocused();
   await expect(mandante).toHaveValue("2");
   await visitante.fill("3");
-  await jogo.getByRole("button", { name: "Atualizar" }).click();
+  await salvar.click();
 
-  await expect(page.getByRole("status")).toHaveText("Placar atualizado.");
-  await expect(lista.getByRole("listitem")).toHaveCount(1);
+  await expect(page.getByRole("status")).toHaveText(
+    "1 placar salvo na rodada.",
+  );
+  await expect(lista.getByRole("listitem")).toHaveCount(10);
+  await expect(resultado("2 × 1")).toHaveCount(0);
   await expect(lista.getByText("2 × 3")).toBeVisible();
   page.once("dialog", (dialog) => dialog.accept());
-  await lista.getByRole("button", { name: "Excluir" }).click();
-  await expect(lista.getByText("Nenhum placar registrado.")).toBeVisible();
+  await resultado("2 × 3").getByRole("button", { name: "Excluir" }).click();
+  await expect(lista.getByRole("listitem")).toHaveCount(9);
   await expect(mandante).toHaveValue("");
   await expect(visitante).toHaveValue("");
 });
 
-test("mostra erro de validação na tela estreita", async ({ page }) => {
+test("orienta sobre uma rodada vazia e bloqueia o lote com placar incompleto na tela estreita", async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   const painel = page.getByRole("region", { name: "Confrontos" });
-  await expect(painel.getByRole("form")).toHaveCount(10);
-  const jogo = painel.getByRole("form", { name: "Fluminense x Grêmio" });
-  await jogo.getByRole("button", { name: "Salvar" }).click();
-
-  await expect(jogo.getByRole("alert")).toHaveText(
-    "Informe gols inteiros e não negativos para os dois times.",
+  const formulario = painel.getByRole("form", { name: "Placares da rodada" });
+  const salvar = formulario.getByRole("button", {
+    name: "Salvar placares da rodada",
+  });
+  await expect(formulario.getByRole("group")).toHaveCount(10);
+  await salvar.click();
+  await expect(formulario.getByRole("alert")).toHaveText(
+    "Preencha ou altere um placar para salvar.",
   );
+
+  const jogo = formulario.getByRole("group", { name: "Fluminense x Grêmio" });
+  await jogo.getByLabel("Gols do mandante").fill("1");
+  const segundoJogo = formulario.getByRole("group", {
+    name: "Botafogo x Cruzeiro",
+  });
+  await segundoJogo.getByLabel("Gols do mandante").fill("0");
+  await segundoJogo.getByLabel("Gols do visitante").fill("2");
+  await salvar.click();
+
+  await expect(formulario.getByRole("alert")).toHaveText(
+    "Confira os placares destacados antes de salvar.",
+  );
+  await expect(jogo.getByLabel("Gols do visitante")).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
+  const lista = page.getByRole("region", { name: "Partidas registradas" });
+  await expect(lista.getByText("Nenhum placar registrado.")).toBeVisible();
+
+  await jogo.getByLabel("Gols do visitante").fill("0");
+  await salvar.click();
+  await expect(formulario.getByRole("alert")).toHaveCount(0);
+  await expect(lista.getByRole("listitem")).toHaveCount(2);
   expect(
     await page.locator("body").evaluate((corpo) => corpo.scrollWidth),
   ).toBe(390);

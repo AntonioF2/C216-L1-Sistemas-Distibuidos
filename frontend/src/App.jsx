@@ -21,27 +21,31 @@ export default function App() {
 
   function atualizarRascunho(id, placar) {
     definirRascunhos((anteriores) => new Map(anteriores).set(id, placar));
+    definirAviso("");
   }
 
-  function limparRascunho(id) {
+  function limparRascunhos(ids) {
     definirRascunhos((anteriores) => {
       const restantes = new Map(anteriores);
-      restantes.delete(id);
+      for (const id of ids) restantes.delete(id);
       return restantes;
     });
   }
 
-  function salvar(resultado) {
-    const jaRegistrado = partidas.some(({ id }) => id === resultado.id);
-    definirPartidas((anteriores) =>
-      jaRegistrado
-        ? anteriores.map((partida) =>
-            partida.id === resultado.id ? resultado : partida,
-          )
-        : [...anteriores, resultado],
+  function salvar(resultados) {
+    definirPartidas((anteriores) => {
+      const placares = new Map(
+        anteriores.map((partida) => [partida.id, partida]),
+      );
+      for (const resultado of resultados) placares.set(resultado.id, resultado);
+      return [...placares.values()];
+    });
+    limparRascunhos(resultados.map(({ id }) => id));
+    definirAviso(
+      resultados.length === 1
+        ? "1 placar salvo na rodada."
+        : `${resultados.length} placares salvos na rodada.`,
     );
-    limparRascunho(resultado.id);
-    definirAviso(jaRegistrado ? "Placar atualizado." : "Placar registrado.");
   }
 
   function editar(partida) {
@@ -54,7 +58,7 @@ export default function App() {
     definirPartidas((anteriores) =>
       anteriores.filter(({ id }) => id !== partida.id),
     );
-    limparRascunho(partida.id);
+    limparRascunhos([partida.id]);
     definirAviso("Placar excluído.");
   }
 
@@ -84,6 +88,7 @@ export default function App() {
               rodada={rodada}
               partidas={partidas}
               rascunhos={rascunhos}
+              aviso={aviso}
               aoMudarRodada={mudarRodada}
               aoAlterarPlacar={atualizarRascunho}
               aoSalvar={salvar}
@@ -91,9 +96,6 @@ export default function App() {
           </div>
           <div className="area-classificacao">
             <Classificacao partidas={partidas} />
-            <p className="sr-only" role="status">
-              {aviso}
-            </p>
             <Partidas
               partidas={partidas}
               aoEditar={editar}

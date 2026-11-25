@@ -228,9 +228,11 @@ make frontend-preparar
 make frontend-rodar
 ```
 
-Abra <http://127.0.0.1:5173>. A tela começa na Rodada 1 e apresenta os 10 confrontos da rodada selecionada, com mandante, visitante e escudos. Use as setas para navegar pelas 38 rodadas e registre os gols em cada confronto. Os jogos seguem a [tabela básica da CBF para a Série A de 2026](https://stcbfsiteprdimgbrs.blob.core.windows.net/img-site/cdn/Tabela_BA_sica_Brasileiro_SA_rie_A_2026_d64996b4d8.pdf).
+Abra <http://127.0.0.1:5173>. A tela começa na Rodada 1 e apresenta os 10 confrontos da rodada selecionada, com mandante, visitante e escudos. Use as setas para navegar pelas 38 rodadas. Os jogos seguem a [tabela básica da CBF para a Série A de 2026](https://stcbfsiteprdimgbrs.blob.core.windows.net/img-site/cdn/Tabela_BA_sica_Brasileiro_SA_rie_A_2026_d64996b4d8.pdf).
 
-A classificação é recalculada ao registrar, atualizar ou excluir um placar. Os resultados são simulados e ficam disponíveis até recarregar a página. A classificação ordena por pontos, vitórias, saldo de gols e gols marcados. Empates nesses critérios usam a ordem dos nomes.
+Preencha os dois gols de cada confronto que deseja registrar e clique em **Salvar placares da rodada**. Confrontos pendentes podem ficar em branco. Se houver um placar incompleto ou inválido, corrija o confronto destacado antes de salvar. Use o mesmo botão para salvar alterações em placares já registrados.
+
+A classificação é recalculada ao salvar os placares da rodada ou excluir um resultado. Os resultados são simulados e ficam disponíveis até recarregar a página. A classificação ordena por pontos, vitórias, saldo de gols e gols marcados. Empates nesses critérios usam a ordem dos nomes.
 
 O frontend usa JavaScript, React, Vite e Tailwind CSS. Para verificar a interface:
 

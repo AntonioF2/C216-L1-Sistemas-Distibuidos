@@ -193,10 +193,8 @@ button {
   border-top: 1px solid #edf0eb;
 }
 .jogo-da-rodada {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px 12px;
+  min-width: 0;
+  width: 100%;
   padding: 10px 20px;
 }
 .times-do-jogo {
@@ -215,9 +213,14 @@ button {
   width: 22px;
   height: 22px;
 }
-.jogo-da-rodada button {
-  min-width: 82px;
-  min-height: 40px;
+.confrontos-acoes {
+  padding: 14px 20px;
+  border-top: 1px solid #edf0eb;
+}
+.confrontos-aviso:not(:empty) {
+  margin-top: 8px;
+  color: #355341;
+  font-size: 0.8rem;
 }
 .seletor {
   display: grid;
@@ -268,6 +271,9 @@ button {
 .time-do-jogo input::-webkit-outer-spin-button {
   appearance: none;
 }
+.time-do-jogo input[aria-invalid="true"] {
+  border-color: #9b4840;
+}
 .confrontos-topo :focus-visible {
   outline-color: #d8f276;
 }
@@ -303,15 +309,11 @@ button {
   background: #faede8;
 }
 .erro {
-  grid-column: 1 / -1;
   padding: 9px 12px;
   border-radius: 8px;
   font-size: 0.8rem;
   background: #fbeae4;
   color: #822f28;
-}
-.placar-registrado {
-  border: 1px solid #cbd4c9;
 }
 .lista-partidas {
   list-style: none;
@@ -362,6 +364,7 @@ button {
 
 @media (max-width: 410px) {
   .confrontos-topo,
+  .confrontos-acoes,
   .jogo-da-rodada {
     padding-inline: 12px;
   }
