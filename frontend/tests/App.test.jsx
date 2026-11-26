@@ -3,7 +3,68 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import App from "../src/App.jsx";
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
+
+it("pede confirmação e só limpa a simulação depois da resposta da API", async () => {
+  const pessoa = userEvent.setup();
+  vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValue(true);
+  const fetchMock = vi
+    .fn()
+    .mockResolvedValueOnce(
+      Response.json([
+        {
+          id: 77,
+          rodada: 1,
+          mandante: { id: 14 },
+          visitante: { id: 15 },
+          gols_mandante: 2,
+          gols_visitante: 1,
+        },
+      ]),
+    )
+    .mockResolvedValueOnce(Response.json({}, { status: 404 }))
+    .mockResolvedValueOnce(new Response(null, { status: 204 }));
+  vi.stubGlobal("fetch", fetchMock);
+  render(<App />);
+
+  const zerar = await screen.findByRole("button", { name: "Zerar simulação" });
+  const lista = within(
+    screen.getByRole("region", { name: "Partidas registradas" }),
+  );
+  expect(lista.getByText("2 × 1")).toBeInTheDocument();
+  await pessoa.click(zerar);
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+
+  await pessoa.click(zerar);
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Não foi possível zerar a simulação.",
+  );
+  expect(lista.getByText("2 × 1")).toBeInTheDocument();
+
+  await pessoa.click(lista.getByRole("button", { name: "Próxima rodada" }));
+  const jogo = within(
+    screen.getByRole("group", { name: "Flamengo x Internacional" }),
+  );
+  await pessoa.type(jogo.getByLabelText("Gols do mandante"), "5");
+  await pessoa.click(zerar);
+  expect(await screen.findByText("Simulação zerada.")).toBeInTheDocument();
+  expect(fetchMock).toHaveBeenLastCalledWith(
+    expect.stringMatching(/\/simulacao\/placares$/),
+    { method: "DELETE" },
+  );
+  expect(lista.getByText("Rodada 1")).toBeInTheDocument();
+  expect(
+    lista.getByText("Nenhum placar registrado nesta rodada."),
+  ).toBeInTheDocument();
+  await pessoa.click(lista.getByRole("button", { name: "Próxima rodada" }));
+  const rodadaReaberta = within(
+    screen.getByRole("group", { name: "Flamengo x Internacional" }),
+  );
+  expect(rodadaReaberta.getByLabelText("Gols do mandante")).toHaveValue(null);
+});
 
 it("guarda os rascunhos ao navegar e salva juntos os placares preenchidos", async () => {
   const pessoa = userEvent.setup();

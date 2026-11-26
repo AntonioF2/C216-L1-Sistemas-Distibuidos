@@ -78,3 +78,11 @@ class RepositorioPartidasEmMemoria:
     def remover(self, partida_id: int) -> bool:
         with self._lock:
             return self._partidas.pop(partida_id, None) is not None
+
+    def limpar_calendario(self) -> None:
+        with self._lock:
+            self._partidas = {
+                partida_id: partida
+                for partida_id, partida in self._partidas.items()
+                if partida.chave_confronto is None
+            }

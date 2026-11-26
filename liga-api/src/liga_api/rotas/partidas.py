@@ -76,3 +76,9 @@ def atualizar_partida(
 def excluir_partida(partida_id: IdPartida, servico: ServicoDaRodada) -> Response:
     servico.excluir(partida_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete("/simulacao/placares", status_code=status.HTTP_204_NO_CONTENT)
+def zerar_simulacao(servico: ServicoDaRodada) -> Response:
+    servico.zerar_simulacao()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

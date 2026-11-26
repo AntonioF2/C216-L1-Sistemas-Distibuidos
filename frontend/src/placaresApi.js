@@ -42,7 +42,12 @@ async function requisitar(caminho, mensagem, opcoes) {
     throw new Error("Não foi possível conectar à API. Tente novamente.");
   }
   if (!resposta.ok) {
-    if (opcoes?.method === "DELETE" && resposta.status === 404) return;
+    if (
+      opcoes?.method === "DELETE" &&
+      caminho.startsWith("/partidas/") &&
+      resposta.status === 404
+    )
+      return;
     const erro = await resposta.json().catch(() => ({}));
     throw new Error(typeof erro?.detail === "string" ? erro.detail : mensagem);
   }
@@ -84,5 +89,15 @@ export function removerPlacar(partidaId) {
     `/partidas/${partidaId}`,
     "Não foi possível excluir o placar.",
     { method: "DELETE" },
+  );
+}
+
+export function zerarSimulacao() {
+  return requisitar(
+    "/simulacao/placares",
+    "Não foi possível zerar a simulação.",
+    {
+      method: "DELETE",
+    },
   );
 }

@@ -113,3 +113,9 @@ class PartidasPostgres:
         )
         self._sessao.commit()
         return id_removido is not None
+
+    def limpar_calendario(self) -> None:
+        self._sessao.execute(
+            delete(PartidaORM).where(PartidaORM.chave_confronto.is_not(None))
+        )
+        self._sessao.commit()

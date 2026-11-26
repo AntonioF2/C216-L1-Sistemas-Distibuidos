@@ -12,20 +12,18 @@ A classificação ordena os 20 clubes por pontos, vitórias, saldo de gols e gol
 
 Os 380 jogos seguem a [tabela básica da CBF para a Série A de 2026](https://stcbfsiteprdimgbrs.blob.core.windows.net/img-site/cdn/Tabela_BA_sica_Brasileiro_SA_rie_A_2026_d64996b4d8.pdf). Os escudos PNG identificam os clubes e têm como fonte o [simulador do ge de 2026](https://ge.globo.com/futebol/brasileirao-serie-a/simulador-do-brasileirao-2026/).
 
+Use **Zerar simulação** e confirme para excluir os placares de todas as rodadas, descartar os rascunhos e voltar à Rodada 1.
+
 ## Execução com Docker Compose
 
-Execute os comandos na raiz do repositório, na branch `projeto-final`. Use Python 3.14, GNU Make e Docker com Compose v2 e suporte a contêineres Linux. A primeira construção baixa imagens e dependências.
+Use Python 3.14, GNU Make e Docker com Compose v2 e suporte a contêineres Linux. A primeira construção baixa imagens e dependências.
 
-```text
-make docker-configurar
-make docker-subir
-make docker-estado
-make docker-checar
-```
-
-- [Mesa da Rodada](http://127.0.0.1:5173/)
-- [Swagger da API](http://127.0.0.1:8000/docs)
-- [Verificação de saúde da API](http://127.0.0.1:8000/saude)
+1. **Inicie o Docker.** No Windows, abra o Docker Desktop e aguarde o motor Docker ficar pronto antes de rodar o Make.
+2. **Abra o terminal na raiz do repositório**, na branch `projeto-final`.
+3. **Prepare o ambiente.** Rode `make docker-configurar` para criar o `.env` local. O comando preserva um arquivo existente.
+4. **Suba a aplicação.** Rode `make docker-subir` e aguarde os serviços iniciarem.
+5. **Confira os serviços.** Rode `make docker-estado` para ver o estado dos contêineres e `make docker-checar` para verificar a comunicação entre eles.
+6. **Abra a aplicação no navegador.** [Mesa da Rodada](http://127.0.0.1:5173/) · [Swagger da API](http://127.0.0.1:8000/docs) · [Saúde da API](http://127.0.0.1:8000/saude).
 
 O Compose inicia o PostgreSQL, aguarda sua verificação de saúde e sobe o backend. A API aplica as migrações do Alembic antes de iniciar o Uvicorn. A interface é disponibilizada pelo serviço web depois que a API passa na verificação de saúde. A API usa `banco-mesa:5432` na rede Docker. O navegador faz requisições à porta publicada da API no computador.
 
@@ -81,6 +79,7 @@ O FastAPI permite as origens configuradas para os métodos GET, POST, PUT e DELE
 | GET | `/partidas` | Consulta resultados. Aceita `rodada` e o filtro `calendario=true` |
 | PUT | `/rodadas/{rodada}/placares` | Cria ou atualiza até 10 placares da rodada em uma transação |
 | DELETE | `/partidas/{partida_id}` | Exclui um placar e retorna HTTP 204 |
+| DELETE | `/simulacao/placares` | Exclui todos os placares do simulador e retorna HTTP 204 |
 | POST | `/partidas` | Registra um placar avulso e retorna HTTP 201 |
 | GET e PUT | `/partidas/{partida_id}` | Consulta ou atualiza uma partida por ID |
 

@@ -6,6 +6,7 @@ import {
   consultarPlacares,
   gravarRodada,
   removerPlacar,
+  zerarSimulacao,
 } from "./placaresApi.js";
 
 export default function App() {
@@ -17,6 +18,7 @@ export default function App() {
   const [erroCarga, definirErroCarga] = useState("");
   const [operacao, definirOperacao] = useState(null);
   const [feedback, definirFeedback] = useState(null);
+  const [versaoFormulario, definirVersaoFormulario] = useState(0);
   const partidasDaRodada = partidas.filter(
     (partida) => partida.rodada === rodada,
   );
@@ -116,6 +118,32 @@ export default function App() {
     }
   }
 
+  async function reiniciarSimulacao() {
+    if (
+      operacao ||
+      !window.confirm(
+        "Zerar a simulação? Todos os placares salvos e rascunhos serão apagados.",
+      )
+    )
+      return;
+
+    definirOperacao("zerar");
+    definirFeedback(null);
+    try {
+      await zerarSimulacao();
+      definirPartidas([]);
+      definirRascunhos(new Map());
+      definirRodada(1);
+      definirFoco(null);
+      definirVersaoFormulario((anterior) => anterior + 1);
+      definirFeedback({ operacao: "zerar", aviso: "Simulação zerada." });
+    } catch (erro) {
+      definirFeedback({ operacao: "zerar", erro: erro.message });
+    } finally {
+      definirOperacao(null);
+    }
+  }
+
   return (
     <>
       <header className="barra">
@@ -128,13 +156,37 @@ export default function App() {
       </header>
       <main className="limite">
         <div className="intro">
-          <h1>
-            Simule a rodada<span>.</span>
-          </h1>
-          <p>
-            Preencha os placares dos confrontos e acompanhe as mudanças na
-            classificação.
-          </p>
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h1>
+                Simule a rodada<span>.</span>
+              </h1>
+              <p>
+                Preencha os placares dos confrontos e acompanhe as mudanças na
+                classificação.
+              </p>
+            </div>
+            {!carregando && !erroCarga && (
+              <button
+                className="botao-secundario excluir border border-current disabled:opacity-60"
+                type="button"
+                disabled={!!operacao}
+                onClick={reiniciarSimulacao}
+              >
+                {operacao === "zerar"
+                  ? "Zerando simulação…"
+                  : "Zerar simulação"}
+              </button>
+            )}
+          </div>
+          {feedback?.operacao === "zerar" && feedback.erro && (
+            <p className="erro" role="alert">
+              {feedback.erro}
+            </p>
+          )}
+          {feedback?.operacao === "zerar" && feedback.aviso && (
+            <p role="status">{feedback.aviso}</p>
+          )}
         </div>
         {carregando && <p role="status">Carregando placares…</p>}
         {erroCarga && (
@@ -153,6 +205,7 @@ export default function App() {
           <div className="quadro">
             <div className="area-formulario">
               <PlacarForm
+                key={versaoFormulario}
                 rodada={rodada}
                 partidas={partidasDaRodada}
                 rascunhos={rascunhos}

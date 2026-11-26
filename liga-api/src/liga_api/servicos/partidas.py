@@ -173,3 +173,6 @@ class ServicoPartidas:
     def excluir(self, partida_id: int) -> None:
         if not self._repositorio.remover(partida_id):
             raise RecursoNaoEncontrado(f"Partida {partida_id} nao encontrada.")
+
+    def zerar_simulacao(self) -> None:
+        self._repositorio.limpar_calendario()
