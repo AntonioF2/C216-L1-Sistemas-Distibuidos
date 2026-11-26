@@ -90,6 +90,7 @@
   padding: 20px 22px;
 }
 .cabecalho-painel h2,
+.partidas-topo h2,
 .confrontos h2 {
   font-weight: 750;
   font-size: 1.35rem;
@@ -103,6 +104,9 @@
 .tabela-rolavel {
   max-height: 440px;
   overflow: auto;
+}
+.tabela-rolavel.tabela-expandida {
+  max-height: none;
 }
 .classificacao {
   width: 100%;
@@ -172,14 +176,34 @@
 button {
   cursor: pointer;
 }
-.confrontos-topo {
+.expandir-classificacao {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #cbd4c9;
+  border-radius: 8px;
+  background: #fafbf8;
+  color: #284734;
+  font-size: 1.18rem;
+}
+.expandir-classificacao:hover {
+  background: #e5efd8;
+}
+.confrontos-topo,
+.partidas-topo {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(135px, 160px);
   align-items: center;
   gap: 8px 12px;
   padding: 17px 20px;
+}
+.confrontos-topo {
   background: #213c2f;
   color: #fff;
+}
+.partidas-topo .nota {
+  grid-column: 1 / -1;
 }
 .confrontos-contagem {
   grid-column: 1 / -1;
@@ -320,15 +344,11 @@ button {
 }
 .partida {
   display: grid;
-  grid-template-columns: minmax(76px, 1fr) auto minmax(119px, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
   padding: 9px 20px;
   border-top: 1px solid #edf0eb;
-}
-.rodada {
-  font-size: 0.75rem;
-  color: #52635a;
 }
 .confronto {
   display: inline-flex;
@@ -364,13 +384,13 @@ button {
 
 @media (max-width: 410px) {
   .confrontos-topo,
+  .partidas-topo,
   .confrontos-acoes,
   .jogo-da-rodada {
     padding-inline: 12px;
   }
   .partida {
-    padding-inline: 8px;
-    grid-template-columns: minmax(55px, 1fr) auto minmax(101px, 1fr);
+    padding-inline: 12px;
   }
   .partida .botao-secundario {
     padding-inline: 5px;

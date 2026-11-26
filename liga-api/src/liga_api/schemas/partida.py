@@ -22,13 +22,16 @@ class TimeSaida(BaseModel):
         return url_escudo(self.sigla)
 
 
-class PartidaEntrada(BaseModel):
+class PlacarEntrada(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     mandante_id: InteiroPositivo
     visitante_id: InteiroPositivo
     gols_mandante: QuantidadeGols
     gols_visitante: QuantidadeGols
+
+
+class PartidaEntrada(PlacarEntrada):
     rodada: InteiroPositivo = 1
 
 

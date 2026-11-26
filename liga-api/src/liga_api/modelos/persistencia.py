@@ -24,3 +24,4 @@ class PartidaORM(Base):
     visitante_id: Mapped[int] = mapped_column(ForeignKey("times.id"))
     gols_mandante: Mapped[int]
     gols_visitante: Mapped[int]
+    chave_confronto: Mapped[str | None] = mapped_column(String(32), unique=True)

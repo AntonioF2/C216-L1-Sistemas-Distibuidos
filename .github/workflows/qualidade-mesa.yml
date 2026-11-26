@@ -3,6 +3,8 @@ name: Qualidade do Mesa da Rodada
 on:
   push:
     branches: [projeto-final]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
@@ -57,7 +59,7 @@ jobs:
   verificar-frontend:
     name: Frontend - qualidade, build e navegador
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: Obter o projeto
         uses: actions/checkout@v6
@@ -76,7 +78,7 @@ jobs:
           make frontend-preparar
           make frontend-verificar
 
-      - name: Verificar o fluxo no Chromium
+      - name: Testar React, API e PostgreSQL no Chromium
         run: |
           make frontend-instalar-navegador-ci
           make frontend-e2e

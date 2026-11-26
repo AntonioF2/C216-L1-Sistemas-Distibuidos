@@ -17,6 +17,7 @@ class Partida:
     visitante_id: int
     gols_mandante: int
     gols_visitante: int
+    chave_confronto: str | None = None
 
 
 @dataclass(frozen=True)

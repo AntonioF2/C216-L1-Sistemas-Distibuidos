@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import {
   calcularClassificacao,
   times,
-  validarPlacar,
+  validarGolsDoPlacar,
 } from "../src/campeonato.js";
 
 it("atualiza pontos, saldo e aproveitamento de uma vitória e um empate", () => {
@@ -29,16 +29,12 @@ it("atualiza pontos, saldo e aproveitamento de uma vitória e um empate", () => 
 });
 
 const placar = {
-  mandante_id: "13",
-  visitante_id: "18",
   gols_mandante: "0",
   gols_visitante: "0",
-  rodada: "1",
 };
 
 it.each([
   [{}, ""],
-  [{ visitante_id: "13" }, "Mandante e visitante devem ser times diferentes."],
   [
     { gols_mandante: "" },
     "Informe gols inteiros e não negativos para os dois times.",
@@ -47,7 +43,14 @@ it.each([
     { gols_visitante: "-1" },
     "Informe gols inteiros e não negativos para os dois times.",
   ],
-  [{ rodada: "0" }, "Informe uma rodada com um número inteiro positivo."],
-])("valida o placar com alterações %j", (alteracao, mensagem) => {
-  expect(validarPlacar({ ...placar, ...alteracao })).toBe(mensagem);
+  [
+    { gols_mandante: "1.5" },
+    "Informe gols inteiros e não negativos para os dois times.",
+  ],
+  [
+    { gols_visitante: "2147483648" },
+    "Informe gols inteiros e não negativos para os dois times.",
+  ],
+])("valida os gols com alterações %j", (alteracao, mensagem) => {
+  expect(validarGolsDoPlacar({ ...placar, ...alteracao })).toBe(mensagem);
 });

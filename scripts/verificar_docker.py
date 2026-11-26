@@ -36,6 +36,16 @@ def consultar_banco(sql: str) -> str:
 
 
 def verificar_servicos() -> None:
+    porta_web = int(compose("port", "web-mesa", "80").rsplit(":", 1)[1])
+    url_web = f"http://127.0.0.1:{porta_web}/"
+    with urlopen(url_web, timeout=5) as resposta:
+        if (
+            resposta.status != 200
+            or b"<title>Mesa da Rodada</title>" not in resposta.read()
+        ):
+            raise RuntimeError("A interface nao respondeu com a pagina do simulador.")
+    print(f"OK: interface HTTP 200 em {url_web}")
+
     endereco = compose("port", "api-mesa", "8000")
     porta = int(endereco.rsplit(":", 1)[1])
     url = f"http://127.0.0.1:{porta}/saude"

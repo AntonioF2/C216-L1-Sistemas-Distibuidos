@@ -21,12 +21,13 @@ ajuda:
 	@echo "  make frontend-rodar      - inicia o frontend local"
 	@echo "  make frontend-verificar  - executa lint, formato, testes e build"
 	@echo "  make frontend-instalar-navegador - instala Chromium para os testes"
-	@echo "  make frontend-e2e        - executa os testes no navegador"
+	@echo "  make frontend-e2e        - testa a aplicacao completa em Docker isolado"
+	@echo "  make verificar-tudo      - verifica backend, frontend e integracao"
 	@echo "  make banco-migrar     - aplica as migracoes no PostgreSQL do Compose"
 	@echo "  make banco-revisao    - mostra a revisao aplicada ao banco"
 	@echo "  make docker-configurar - cria .env local sem sobrescrever o existente"
 	@echo "  make docker-validar   - valida a configuracao do Compose"
-	@echo "  make docker-construir - constroi a imagem da API"
+	@echo "  make docker-construir - constroi as imagens da API e da interface"
 	@echo "  make docker-subir     - constroi e inicia os servicos"
 	@echo "  make docker-estado    - mostra os containers"
 	@echo "  make docker-logs      - mostra os logs recentes"
@@ -63,7 +64,7 @@ testar:
 
 verificar: validar lint conferir-formato testar
 
-.PHONY: frontend-preparar frontend-rodar frontend-verificar frontend-instalar-navegador frontend-instalar-navegador-ci frontend-e2e
+.PHONY: frontend-preparar frontend-rodar frontend-verificar frontend-instalar-navegador frontend-instalar-navegador-ci frontend-e2e verificar-tudo
 
 frontend-preparar:
 	$(NPM_FRONTEND) ci
@@ -84,7 +85,9 @@ frontend-instalar-navegador-ci:
 	$(NPM_FRONTEND) run e2e:instalar-ci
 
 frontend-e2e:
-	$(NPM_FRONTEND) run test:e2e
+	python scripts/testar_fullstack.py
+
+verificar-tudo: verificar frontend-verificar frontend-e2e
 
 .PHONY: docker-configurar docker-validar docker-construir docker-subir docker-estado docker-logs docker-checar docker-verificar-volume docker-parar
 .PHONY: banco-migrar banco-revisao
@@ -102,7 +105,7 @@ docker-validar:
 	$(COMPOSE) config --quiet
 
 docker-construir: docker-validar
-	$(COMPOSE) build api-mesa
+	$(COMPOSE) build api-mesa web-mesa
 
 docker-subir: docker-validar
 	$(COMPOSE) up --detach --build --wait --wait-timeout 120

@@ -151,3 +151,38 @@ def test_nova_instancia_da_api_nao_herda_partidas_de_outra_instancia(
 
     with TestClient(criar_app_de_teste()) as outra_api:
         assert outra_api.get("/partidas").json() == []
+
+
+def test_salva_lote_sem_duplicar_partidas_ao_reenviar(cliente_api):
+    primeiro = {
+        "mandante_id": 1,
+        "visitante_id": 2,
+        "gols_mandante": 2,
+        "gols_visitante": 0,
+    }
+    segundo = {**primeiro, "mandante_id": 3, "visitante_id": 4}
+    caminho = "/rodadas/1/placares"
+    criado = cliente_api.put(caminho, json=[primeiro, segundo])
+    assert criado.status_code == 200
+    atualizado = cliente_api.put(caminho, json=[{**primeiro, "gols_mandante": 3}])
+    assert atualizado.status_code == 200
+    assert atualizado.json()[0]["id"] == criado.json()[0]["id"]
+
+    salvos = cliente_api.get("/partidas", params={"calendario": "true"}).json()
+    assert len(salvos) == 2
+    assert salvos[0]["gols_mandante"] == 3
+
+
+def test_lote_invalido_nao_grava_resultados_parciais(cliente_api):
+    partida = {
+        "mandante_id": 1,
+        "visitante_id": 2,
+        "gols_mandante": 2,
+        "gols_visitante": 0,
+    }
+    resposta = cliente_api.put(
+        "/rodadas/2/placares", json=[partida, {**partida, "visitante_id": 1}]
+    )
+
+    assert resposta.status_code == 422
+    assert cliente_api.get("/partidas", params={"calendario": "true"}).json() == []

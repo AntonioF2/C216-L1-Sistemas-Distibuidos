@@ -1,247 +1,109 @@
 # Mesa da Rodada
 
-Projeto final da disciplina C216 — Sistemas Distribuídos. A proposta é desenvolver uma aplicação web para simular placares de partidas e acompanhar seus efeitos na classificação de um campeonato inspirado no Brasileirão.
+Projeto final da disciplina C216 — Sistemas Distribuídos. O Mesa da Rodada permite simular os resultados do Brasileirão Série A de 2026 e acompanhar como os placares mudam a classificação.
 
-## Estado atual
+## Como usar
 
-O desenvolvimento está na branch `projeto-final`. A API possui consulta de saúde, catálogo da Série A de 2026 e operações de criação, consulta, edição e exclusão de placares de partidas. Cada placar informa o vencedor ou empate e os pontos dos dois times.
+A tela começa na Rodada 1. Use as setas para navegar pelas 38 rodadas e encontrar os confrontos. Preencha os dois gols dos jogos que deseja simular e clique em **Salvar placares da rodada**. Jogos sem placar podem ficar em branco. A tabela usa os resultados salvos de todas as rodadas.
 
-A infraestrutura Docker desta etapa contém uma imagem própria para a API, PostgreSQL com volume persistente e verificações de saúde dos dois serviços. O Makefile oferece os comandos de preparação, execução e validação.
+A lista **Partidas registradas** mostra os placares da rodada selecionada. As setas da lista e dos confrontos mudam os dois painéis juntos. Para editar, clique em **Editar**, ajuste os gols no confronto e use o mesmo botão de salvar. A lista também permite excluir placares. O lote é gravado em uma transação no PostgreSQL e pode ser reenviado sem duplicar o placar. Recarregar a página recupera os resultados salvos. A aplicação mantém um cenário compartilhado e os placares são informados pelo usuário.
 
-O workflow de integração contínua em `.github/workflows/qualidade-mesa.yml` possui jobs de backend e frontend. Os resultados das execuções remotas ficam na aba Actions.
+A classificação ordena os 20 clubes por pontos, vitórias, saldo de gols e gols marcados. Use a seta no cabeçalho para expandir ou recolher a tabela. Empates nos critérios usam a ordem dos nomes. Uma vitória vale 3 pontos, um empate vale 1 e uma derrota vale 0.
 
-A API armazena o catálogo e as partidas no PostgreSQL com SQLAlchemy e psycopg. Alembic cria e versiona as tabelas. Os placares registrados permanecem disponíveis após reiniciar a API.
+Os 380 jogos seguem a [tabela básica da CBF para a Série A de 2026](https://stcbfsiteprdimgbrs.blob.core.windows.net/img-site/cdn/Tabela_BA_sica_Brasileiro_SA_rie_A_2026_d64996b4d8.pdf). Os escudos PNG identificam os clubes e têm como fonte o [simulador do ge de 2026](https://ge.globo.com/futebol/brasileirao-serie-a/simulador-do-brasileirao-2026/).
 
-O frontend em React funciona como um simulador independente com os confrontos do Brasileirão Série A de 2026. A conexão da interface com a API e o agrupamento em simulações ficam para as próximas etapas.
+## Execução com Docker Compose
 
-## Objetivo
-
-Permitir que o usuário crie cenários de campeonato, informe os placares dos confrontos e visualize uma classificação calculada a partir desses resultados. Cada cenário deverá manter seus próprios resultados, permitindo comparar possibilidades sem alterar outras simulações.
-
-A primeira versão terá uma única tela, com seleção da simulação, formulário de placar, listagem de partidas e tabela de classificação. Os placares serão informados pelo usuário; a simulação não dependerá de previsões automáticas ou de uma API de resultados ao vivo.
-
-## Funcionalidades planejadas
-
-- Criar uma simulação com nome próprio.
-- Consultar e reabrir simulações salvas.
-- Editar o nome de uma simulação e os resultados de suas partidas.
-- Excluir uma simulação e seus dados associados.
-- Selecionar os times mandante e visitante de cada partida.
-- Registrar, consultar, editar e remover placares dentro de uma simulação.
-- Identificar vitória, empate ou derrota com base nos gols de cada time.
-- Recalcular a classificação após incluir, alterar ou remover um resultado.
-- Salvar os dados no PostgreSQL e recuperá-los após atualizar a página.
-- Exibir estados de carregamento, confirmação de operações e mensagens de erro na interface.
-
-O CRUD principal será o de simulações, com todas as operações acessíveis pela interface. O catálogo de times será cadastrado inicialmente no projeto.
-
-## Modelagem inicial
-
-### Time
-
-A classe `Time` representa um clube, com identificador, nome e sigla. O catálogo ativo contém os 20 participantes do Brasileirão Série A de 2026. [Clubes participantes na CBF](https://www.cbf.com.br/futebol-brasileiro/times/campeonato-brasileiro/serie-a/2026)
-
-As estatísticas da classificação serão calculadas por time dentro de cada simulação. Elas não serão atributos globais do clube: um mesmo time poderá ter desempenhos diferentes em cenários distintos.
-
-### Partida
-
-A classe `Partida` representa um confronto com identificador, rodada, mandante, visitante e gols dos dois lados. Nesta versão, somente partidas com placar completo podem ser registradas. O vínculo com uma simulação e o suporte a partidas pendentes ficam para etapas posteriores.
-
-O vencedor e o resultado de cada time serão derivados do placar, sem informar vitória ou derrota separadamente.
-
-### Simulacao
-
-A classe `Simulacao` ainda não foi implementada. Ela agrupará um cenário, seu nome e suas partidas. Os resultados pertencerão ao cenário em que forem registrados.
-
-### Classificação por time
-
-A tabela terá como referência as colunas principais da tabela oficial da CBF.
-
-## Arquitetura básica da API
-
-| Camada | Diretório | Responsabilidade |
-| --- | --- | --- |
-| Rotas | `liga-api/src/liga_api/rotas` | Receber HTTP, declarar métodos e respostas e traduzir erros de domínio |
-| Schemas | `liga-api/src/liga_api/schemas` | Validar a entrada com Pydantic e definir a resposta pública |
-| Serviços | `liga-api/src/liga_api/servicos` | Validar confrontos e calcular resultado e pontuação |
-| Repositórios | `liga-api/src/liga_api/repositorios` | Consultar times e executar o CRUD de partidas com SQLAlchemy |
-| Modelos | `liga-api/src/liga_api/modelos` | Representar o domínio e mapear as tabelas em classes ORM separadas |
-| Banco e migrações | `liga-api/src/liga_api/banco` e `liga-api/migracoes` | Configurar a conexão e versionar a estrutura do PostgreSQL |
-
-`main.py` monta a aplicação e configura o acesso ao banco. Cada requisição às rotas de times ou partidas recebe uma sessão de banco própria, encerrada ao fim do atendimento. Os testes isolados injetam repositórios em memória. O teste de integração usa os repositórios PostgreSQL.
-
-## Endpoints disponíveis
-
-| Método | Caminho | Comportamento |
-| --- | --- | --- |
-| GET | `/saude` | Verifica a disponibilidade da API |
-| GET | `/times` | Lista os 20 clubes da Série A de 2026 com nome, sigla e URL do escudo |
-| GET | `/escudos/{sigla}.png` | Serve o escudo PNG do clube, com a sigla em minúsculas |
-| POST | `/partidas` | Cria um placar e retorna HTTP 201 |
-| GET | `/partidas` | Lista as partidas; aceita o filtro opcional `rodada` |
-| GET | `/partidas/{partida_id}` | Consulta uma partida pelo identificador |
-| PUT | `/partidas/{partida_id}` | Substitui os dados da partida e recalcula o resultado |
-| DELETE | `/partidas/{partida_id}` | Exclui a partida e retorna HTTP 204 sem corpo |
-
-Para ver o catálogo, execute `make docker-configurar` e `make docker-subir` na raiz e abra <http://127.0.0.1:8000/times>. O campo `escudo_url` é um caminho relativo à origem da API, como `/escudos/fla.png`. Os times históricos sem escudo retornam `null` nesse campo.
-
-Os escudos são arquivos PNG locais com transparência, disponíveis também na classificação e na lista de partidas. As imagens têm como fonte o [simulador do ge de 2026](https://ge.globo.com/futebol/brasileirao-serie-a/simulador-do-brasileirao-2026/). Os escudos identificam seus respectivos clubes.
-
-Para registrar um placar, abra <http://127.0.0.1:8000/docs> e envie em `POST /partidas`:
-
-```json
-{
-  "mandante_id": 13,
-  "visitante_id": 18,
-  "gols_mandante": 2,
-  "gols_visitante": 1,
-  "rodada": 1
-}
-```
-
-A resposta identifica o mandante como vencedor, com 3 pontos, e o visitante com 0. Um empate atribui 1 ponto a cada lado. `GET /partidas?rodada=1` consulta somente aquela rodada. Ao editar, envie os dois times e os dois gols; a rodada tem valor padrão 1 quando omitida.
-
-Os identificadores e a rodada devem ser inteiros positivos. Os gols devem ser inteiros não negativos: números fracionários, textos, booleanos e valores nulos são rejeitados. Campos desconhecidos no corpo também são rejeitados. Um clube não pode jogar contra si mesmo. Dados inválidos retornam HTTP 422; referências a times ou partidas inexistentes retornam HTTP 404.
-
-As partidas são armazenadas em um cenário único. O CRUD de simulações e a classificação geral ficam para as próximas etapas.
-
-## Execução e configuração
-
-Execute todos os comandos abaixo na raiz do repositório. Pré-requisitos: Python 3.14 ou superior, Poetry, GNU Make e Docker com suporte a contêineres Linux e ao comando `docker compose`.
-
-O Dockerfile utiliza Python 3.14 em duas etapas: uma instala as dependências e o pacote com Poetry 2.4.2; a outra executa a API como usuário `mesa`, sem privilégios de root. O contexto de build é apenas `liga-api`, com exclusões definidas em `liga-api/.dockerignore`. O Poetry e as dependências de desenvolvimento não são copiados para a imagem de execução.
-
-O Compose utiliza PostgreSQL 17. A API aguarda o healthcheck do banco e possui seu próprio healthcheck em `/saude`. Cada serviço é acessível pelo nome na rede do projeto. O banco não publica uma porta no computador; a API fica disponível apenas na interface local `127.0.0.1`.
-
-### Configuração local
-
-Crie o arquivo `.env` com uma senha aleatória local:
+Execute os comandos na raiz do repositório, na branch `projeto-final`. Use Python 3.14, GNU Make e Docker com Compose v2 e suporte a contêineres Linux. A primeira construção baixa imagens e dependências.
 
 ```text
 make docker-configurar
-```
-
-O comando preserva um `.env` já existente e não imprime a senha. `.env.example` documenta as variáveis e pode ser versionado; `.env` fica ignorado pelo Git.
-
-| Variável | Finalidade | Exemplo |
-| --- | --- | --- |
-| `MESA_API_PORTA` | Porta da API no computador | `8000` |
-| `MESA_DB_NOME` | Banco criado na primeira inicialização | `mesa_rodada` |
-| `MESA_DB_USUARIO` | Usuário inicial do PostgreSQL local | `operador_mesa` |
-| `MESA_DB_SENHA` | Senha local obrigatória, gerada na preparação | Sem valor real no exemplo |
-
-O Compose fornece `DB_HOST=banco-mesa`, `DB_PORT=5432`, `DB_NAME`, `DB_USER` e `DB_PASSWORD` à API e às migrações. A API usa essas configurações para se conectar ao PostgreSQL.
-
-As variáveis `POSTGRES_*` inicializam um volume novo. Alterar usuário, banco ou senha no `.env` depois da primeira execução não altera automaticamente as credenciais já armazenadas no PostgreSQL.
-
-### Execução com Docker Compose
-
-```text
-make docker-validar
-make docker-construir
 make docker-subir
 make docker-estado
 make docker-checar
 ```
 
-`docker-validar` verifica a configuração sem exibir as credenciais. `docker-subir` constrói a imagem e aguarda os dois serviços ficarem saudáveis. O primeiro build precisa de acesso à internet para obter as imagens e dependências.
+- [Mesa da Rodada](http://127.0.0.1:5173/)
+- [Swagger da API](http://127.0.0.1:8000/docs)
+- [Verificação de saúde da API](http://127.0.0.1:8000/saude)
 
-Após o banco ficar pronto, o contêiner da API aplica as revisões do Alembic antes de iniciar o Uvicorn. A revisão `002_catalogo_serie_a_2026` insere os 20 clubes e arquiva os quatro times de demonstração. Partidas antigas com esses times continuam consultáveis, e os cadastros novos usam o catálogo ativo.
+O Compose inicia o PostgreSQL, aguarda sua verificação de saúde e sobe o backend. A API aplica as migrações do Alembic antes de iniciar o Uvicorn. A interface é disponibilizada pelo serviço web depois que a API passa na verificação de saúde. A API usa `banco-mesa:5432` na rede Docker. O navegador faz requisições à porta publicada da API no computador.
 
-```text
-make banco-revisao
-make banco-migrar
-```
+| Comando | Uso |
+| --- | --- |
+| `make docker-validar` | Valida a configuração do Compose |
+| `make docker-construir` | Constrói as imagens da API e da interface |
+| `make banco-revisao` | Mostra a revisão do Alembic aplicada ao banco |
+| `make banco-migrar` | Aplica revisões pendentes com a API em execução |
+| `make docker-logs` | Mostra os logs recentes dos serviços |
+| `make docker-checar` | Verifica as respostas da interface e da API e a conexão com o banco |
+| `make docker-verificar-volume` | Recria os contêineres e verifica um registro de diagnóstico no volume |
+| `make docker-parar` | Encerra os serviços e preserva o volume de dados |
 
-Com a API em execução no Compose, o primeiro comando mostra a revisão aplicada e o segundo reaplica as migrações pendentes. Ao iniciar com `make docker-subir`, essa aplicação é automática. Para conferir a persistência, registre uma partida pelo Swagger, anote o ID, execute `make docker-parar` seguido de `make docker-subir` e consulte `GET /partidas/{partida_id}`.
+### Variáveis de ambiente
 
-Com a porta padrão, acesse:
+`make docker-configurar` cria um `.env` local a partir de `.env.example`, gera uma senha e preserva um arquivo já existente. O Git ignora `.env`.
 
-- Saúde da API: <http://127.0.0.1:8000/saude>
-- Documentação interativa: <http://127.0.0.1:8000/docs>
-- Especificação OpenAPI: <http://127.0.0.1:8000/openapi.json>
+| Variável | Uso | Padrão |
+| --- | --- | --- |
+| `MESA_FRONTEND_PORTA` | Porta publicada da interface | `5173` |
+| `MESA_API_PORTA` | Porta publicada da API | `8000` |
+| `MESA_DB_NOME` | Nome do banco | `mesa_rodada` |
+| `MESA_DB_USUARIO` | Usuário do banco | `operador_mesa` |
+| `MESA_DB_SENHA` | Senha do banco local | Gerada na configuração |
+| `MESA_ORIGENS_FRONTEND` | Origens permitidas pelo CORS, separadas por vírgulas | `127.0.0.1` e `localhost` via HTTP, na porta da interface |
+| `VITE_MESA_API_URL` | URL pública da API usada pelo navegador | HTTP no mesmo host da interface, na porta publicada da API |
 
-Resposta esperada em `/saude`:
+`VITE_MESA_API_URL` é pública e entra no build da interface. Após alterar o endereço da API, rode `make docker-subir` para reconstruir a imagem. O Compose fornece `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` e `DB_PASSWORD` ao backend. As credenciais de inicialização do PostgreSQL são aplicadas quando o volume é criado.
 
-```json
-{"status": "ok", "projeto": "Mesa da Rodada"}
-```
+## Arquitetura e tecnologias
 
-Para consultar os logs ou encerrar o ambiente:
+| Diretório | Responsabilidade |
+| --- | --- |
+| `frontend/src` | React e JavaScript para os confrontos, formulários, histórico e classificação com Tailwind CSS. Vite gera o build servido pelo Nginx |
+| `frontend/src/placaresApi.js` | Cliente HTTP com `fetch` para carregar, gravar e excluir placares |
+| `liga-api/src/liga_api/rotas` e `schemas` | Endpoints FastAPI, parâmetros, contratos Pydantic e respostas HTTP |
+| `liga-api/src/liga_api/servicos` | Validação de confrontos, cálculo de resultados e pontuação |
+| `liga-api/src/liga_api/repositorios` e `modelos` | Domínio e persistência com SQLAlchemy e PostgreSQL |
+| `liga-api/migracoes` | Migrações versionadas com Alembic |
+| `liga-api/tests` e `frontend/tests` | Pytest, Vitest, Testing Library e Playwright |
+| `.github/workflows` | Integração contínua com GitHub Actions |
 
-```text
-make docker-logs
-make docker-parar
-```
+O FastAPI permite as origens configuradas para os métodos GET, POST, PUT e DELETE. A migração `002_catalogo_serie_a_2026` atualiza o catálogo. A revisão `003_chave_confronto` identifica os placares do calendário por rodada, mandante e visitante. Registros avulsos criados pelo CRUD anterior continuam disponíveis pela API e ficam fora do cenário do simulador.
 
-`docker-parar` remove os contêineres e a rede deste projeto, preservando o volume nomeado `dados-campeonato`. O comando não utiliza a opção de remoção de volumes.
+### API
 
-### Verificação da infraestrutura e do volume
+| Método | Caminho | Uso |
+| --- | --- | --- |
+| GET | `/saude` | Disponibilidade da API |
+| GET | `/times` | Catálogo dos 20 clubes ativos com URL do escudo |
+| GET | `/escudos/{sigla}.png` | Escudo PNG do clube |
+| GET | `/partidas` | Consulta resultados. Aceita `rodada` e o filtro `calendario=true` |
+| PUT | `/rodadas/{rodada}/placares` | Cria ou atualiza até 10 placares da rodada em uma transação |
+| DELETE | `/partidas/{partida_id}` | Exclui um placar e retorna HTTP 204 |
+| POST | `/partidas` | Registra um placar avulso e retorna HTTP 201 |
+| GET e PUT | `/partidas/{partida_id}` | Consulta ou atualiza uma partida por ID |
 
-```text
-make docker-checar
-make docker-verificar-volume
-```
-
-O primeiro comando verifica a resposta HTTP, o usuário sem privilégios de root, a conexão TCP da API com `banco-mesa:5432` e uma consulta SQL no PostgreSQL. A conexão TCP confirma a rede entre serviços; não representa uma integração da aplicação com SQLAlchemy.
-
-O segundo comando cria um schema temporário de diagnóstico com um registro SQL, encerra e recria os contêineres deste projeto, verifica que o registro permanece e remove o schema de diagnóstico.
-
-O diagnóstico de volume verifica a infraestrutura. O teste PostgreSQL da suíte verifica a persistência dos placares pela API.
-
-## Preparação do ambiente Python
-
-Pré-requisitos: Python compatível com o `pyproject.toml`, Poetry e GNU Make.
-
-Execute os comandos na raiz do repositório:
-
-- `make preparar`: instala as dependências.
-- `make ambiente`: apresenta o ambiente virtual.
-- `make rodar`: inicia a API fora do Docker. Requer um PostgreSQL acessível e migrado. Defina `DB_HOST`, `DB_NAME`, `DB_USER` e `DB_PASSWORD` no ambiente do processo e `DB_PORT` se a porta diferir de 5432. Para usar o PostgreSQL do Compose, execute `make docker-subir`.
-- `make testar`: executa os testes do backend.
-- `make verificar`: valida a configuração, o código, a formatação e os testes.
-- `make formatar`: aplica a formatação Python.
-
-Execute `make preparar` antes das verificações locais em uma nova cópia do repositório. O lint e a formatação também incluem os scripts de infraestrutura. Os testes locais utilizam as dependências de desenvolvimento; a imagem Docker contém apenas as dependências de execução.
+O lote recebe uma lista de objetos com `mandante_id`, `visitante_id`, `gols_mandante` e `gols_visitante`. Os gols são inteiros não negativos. O navegador mostra mensagens de carregamento, sucesso e erro, e mantém o rascunho se o salvamento falhar.
 
 ## Testes e integração contínua
 
-Para executar a mesma sequencia utilizada pelo CI:
+Para executar as verificações locais, use Poetry e Node.js 24 além dos pré-requisitos do Docker. Instale as dependências e o Chromium uma vez antes de validar uma cópia nova:
 
 ```text
 make preparar
-make verificar
-```
-
-O alvo `make verificar` valida a configuração do Poetry, o lint, a formatação e os testes Pytest. Uma falha em qualquer verificação reprova o job; o CI não aplica formatação automaticamente.
-
-O workflow é disparado por pushes para `projeto-final`, conforme a configuração atual do projeto. Ele utiliza os mesmos comandos Make executados localmente; abrir um PR não dispara uma execução adicional.
-
-O job de frontend executa o Biome, os testes Vitest com React Testing Library, o build do Vite e os testes Playwright no Chromium. Os testes de navegador desta etapa exercitam a interface de demonstração. O teste E2E com API e banco real fica para a integração final.
-
-## Frontend de demonstração
-
-Use Node.js 24 e execute na raiz do repositório:
-
-```text
 make frontend-preparar
-make frontend-rodar
-```
-
-Abra <http://127.0.0.1:5173>. A tela começa na Rodada 1 e apresenta os 10 confrontos da rodada selecionada, com mandante, visitante e escudos. Use as setas para navegar pelas 38 rodadas. Os jogos seguem a [tabela básica da CBF para a Série A de 2026](https://stcbfsiteprdimgbrs.blob.core.windows.net/img-site/cdn/Tabela_BA_sica_Brasileiro_SA_rie_A_2026_d64996b4d8.pdf).
-
-Preencha os dois gols de cada confronto que deseja registrar e clique em **Salvar placares da rodada**. Confrontos pendentes podem ficar em branco. Se houver um placar incompleto ou inválido, corrija o confronto destacado antes de salvar. Use o mesmo botão para salvar alterações em placares já registrados.
-
-A classificação é recalculada ao salvar os placares da rodada ou excluir um resultado. Os resultados são simulados e ficam disponíveis até recarregar a página. A classificação ordena por pontos, vitórias, saldo de gols e gols marcados. Empates nesses critérios usam a ordem dos nomes.
-
-O frontend usa JavaScript, React, Vite e Tailwind CSS. Para verificar a interface:
-
-```text
-make frontend-verificar
 make frontend-instalar-navegador
-make frontend-e2e
+make verificar-tudo
 ```
 
-A instalação do Chromium é necessária na primeira execução dos testes Playwright. Em Linux, caso faltem bibliotecas do navegador, use `make frontend-instalar-navegador-ci`.
+| Comando | Verificações |
+| --- | --- |
+| `make verificar` | Poetry, lint e formato com Ruff, regras e rotas com Pytest |
+| `make frontend-verificar` | Lint e formato com Biome, Vitest com Testing Library e build Vite |
+| `make frontend-e2e` | React, FastAPI e PostgreSQL reais com Playwright |
+| `make verificar-tudo` | Executa as três verificações |
 
-A suíte inclui os 41 casos de regras e API em memória e um teste de integração com PostgreSQL. Esse teste aplica a migração e verifica criação, consulta, edição e exclusão entre novas instâncias da API. O GitHub Actions fornece um PostgreSQL descartável. Para executar o teste localmente, configure `DB_*` para um PostgreSQL de teste e defina `MESA_TESTE_POSTGRES=1` antes de executar `make verificar`. Sem essa opção os 41 casos isolados são executados.
+O Playwright usa um projeto Compose temporário, portas livres e um volume de teste próprio. Ele salva uma rodada pela interface, recarrega para conferir os placares e a classificação, e testa a persistência da edição e da exclusão. O ambiente temporário é removido ao final. Em Linux, use `make frontend-instalar-navegador-ci` para instalar também as dependências do Chromium.
+
+A CI executa em pushes para `projeto-final` e em pull requests com destino a `main`. O job do backend também roda o teste Pytest de persistência com um PostgreSQL descartável. Na execução local padrão, o teste que requer esse banco de teste fica marcado como ignorado. O E2E integrado usa seu próprio banco Docker.

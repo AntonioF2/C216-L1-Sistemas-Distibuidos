@@ -74,26 +74,13 @@ export function calcularClassificacao(catalogo, partidas) {
   );
 }
 
-export function validarPlacar(dados) {
-  if (!dados.mandante_id || !dados.visitante_id) {
-    return "Selecione o mandante e o visitante.";
-  }
-  if (dados.mandante_id === dados.visitante_id) {
-    return "Mandante e visitante devem ser times diferentes.";
-  }
+export function validarGolsDoPlacar({ gols_mandante, gols_visitante }) {
   if (
-    ![dados.gols_mandante, dados.gols_visitante].every(
+    ![gols_mandante, gols_visitante].every(
       (gols) => /^\d+$/.test(gols) && Number(gols) <= 2_147_483_647,
     )
   ) {
     return "Informe gols inteiros e não negativos para os dois times.";
-  }
-  if (
-    !/^\d+$/.test(dados.rodada) ||
-    Number(dados.rodada) < 1 ||
-    Number(dados.rodada) > 2_147_483_647
-  ) {
-    return "Informe uma rodada com um número inteiro positivo.";
   }
   return "";
 }

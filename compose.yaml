@@ -1,6 +1,24 @@
 name: mesa-da-rodada
 
 services:
+  web-mesa:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_MESA_API_PORTA: "${MESA_API_PORTA:-8000}"
+        VITE_MESA_API_URL: "${VITE_MESA_API_URL:-}"
+    ports:
+      - "127.0.0.1:${MESA_FRONTEND_PORTA:-5173}:80"
+    depends_on:
+      api-mesa:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 5s
+      timeout: 3s
+      retries: 6
+
   api-mesa:
     build:
       context: ./liga-api
@@ -13,6 +31,7 @@ services:
       DB_NAME: ${MESA_DB_NOME:?Informe MESA_DB_NOME no .env}
       DB_USER: ${MESA_DB_USUARIO:?Informe MESA_DB_USUARIO no .env}
       DB_PASSWORD: ${MESA_DB_SENHA:?Preencha MESA_DB_SENHA no .env}
+      MESA_ORIGENS_FRONTEND: "${MESA_ORIGENS_FRONTEND:-http://127.0.0.1:${MESA_FRONTEND_PORTA:-5173},http://localhost:${MESA_FRONTEND_PORTA:-5173}}"
     depends_on:
       banco-mesa:
         condition: service_healthy

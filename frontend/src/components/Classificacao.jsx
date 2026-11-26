@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { calcularClassificacao, times } from "../campeonato.js";
 
 export function SeloTime({ time }) {
@@ -29,15 +30,37 @@ const colunas = [
 ];
 
 export default function Classificacao({ partidas }) {
+  const [expandida, definirExpandida] = useState(false);
   const tabela = calcularClassificacao(times, partidas);
+  const rotuloExpansao = expandida
+    ? "Recolher classificação"
+    : "Expandir classificação";
 
   return (
     <section className="painel" aria-labelledby="titulo-classificacao">
       <div className="cabecalho-painel flex items-center justify-between gap-4">
         <h2 id="titulo-classificacao">Classificação</h2>
-        <span className="nota">{times.length} clubes</span>
+        <div className="flex items-center gap-3">
+          <span className="nota">{times.length} clubes</span>
+          <button
+            className="expandir-classificacao"
+            type="button"
+            title={rotuloExpansao}
+            aria-label={rotuloExpansao}
+            aria-expanded={expandida}
+            aria-controls="tabela-classificacao"
+            onClick={() => definirExpandida((anterior) => !anterior)}
+          >
+            <span aria-hidden="true">{expandida ? "↑" : "↓"}</span>
+          </button>
+        </div>
       </div>
-      <div className="tabela-rolavel">
+      <div
+        id="tabela-classificacao"
+        className={
+          expandida ? "tabela-rolavel tabela-expandida" : "tabela-rolavel"
+        }
+      >
         <table className="classificacao" aria-labelledby="titulo-classificacao">
           <thead>
             <tr>

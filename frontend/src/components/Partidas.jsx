@@ -1,19 +1,49 @@
 import { times } from "../campeonato.js";
 import { SeloTime } from "./Classificacao.jsx";
+import SeletorRodada from "./SeletorRodada.jsx";
 
 const catalogo = new Map(times.map((time) => [time.id, time]));
 
-export default function Partidas({ partidas, aoEditar, aoExcluir }) {
+export default function Partidas({
+  rodada,
+  partidas,
+  aoMudarRodada,
+  aoEditar,
+  aoExcluir,
+  operacao,
+  feedback,
+}) {
   return (
     <section className="painel" aria-labelledby="titulo-partidas">
-      <div className="cabecalho-painel flex items-center justify-between gap-4">
+      <div className="partidas-topo">
         <h2 id="titulo-partidas">Partidas registradas</h2>
-        <span className="nota">
-          {partidas.length} {partidas.length === 1 ? "partida" : "partidas"}
-        </span>
+        <SeletorRodada
+          rodada={rodada}
+          aoMudarRodada={aoMudarRodada}
+          ocupado={!!operacao}
+        />
+        <p className="nota">
+          {partidas.length}{" "}
+          {partidas.length === 1
+            ? "partida registrada"
+            : "partidas registradas"}{" "}
+          na rodada
+        </p>
+      </div>
+      {feedback?.erro && (
+        <p className="erro mx-5 mb-2" role="alert">
+          {feedback.erro}
+        </p>
+      )}
+      <div role="status">
+        {(operacao === "excluir" || feedback?.aviso) && (
+          <p className="rodape-painel">
+            {operacao === "excluir" ? "Excluindo placar…" : feedback.aviso}
+          </p>
+        )}
       </div>
       {partidas.length === 0 ? (
-        <p className="rodape-painel">Nenhum placar registrado.</p>
+        <p className="rodape-painel">Nenhum placar registrado nesta rodada.</p>
       ) : (
         <ul className="lista-partidas">
           {partidas.map((partida) => {
@@ -21,7 +51,6 @@ export default function Partidas({ partidas, aoEditar, aoExcluir }) {
             const visitante = catalogo.get(partida.visitante_id);
             return (
               <li className="partida" key={partida.id}>
-                <span className="rodada">Rodada {partida.rodada}</span>
                 <span className="confronto">
                   <SeloTime time={mandante} />
                   <span className="sr-only">{mandante.nome}</span>
@@ -36,6 +65,7 @@ export default function Partidas({ partidas, aoEditar, aoExcluir }) {
                     type="button"
                     className="botao-secundario"
                     onClick={() => aoEditar(partida)}
+                    disabled={!!operacao}
                   >
                     Editar
                   </button>
@@ -43,6 +73,7 @@ export default function Partidas({ partidas, aoEditar, aoExcluir }) {
                     type="button"
                     className="botao-secundario excluir"
                     onClick={() => aoExcluir(partida)}
+                    disabled={!!operacao}
                   >
                     Excluir
                   </button>

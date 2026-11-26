@@ -2,13 +2,40 @@ import { useEffect, useState } from "react";
 import Classificacao from "./components/Classificacao.jsx";
 import Partidas from "./components/Partidas.jsx";
 import PlacarForm from "./components/PlacarForm.jsx";
+import {
+  consultarPlacares,
+  gravarRodada,
+  removerPlacar,
+} from "./placaresApi.js";
 
 export default function App() {
   const [partidas, definirPartidas] = useState([]);
   const [rascunhos, definirRascunhos] = useState(() => new Map());
   const [rodada, definirRodada] = useState(1);
   const [foco, definirFoco] = useState(null);
-  const [aviso, definirAviso] = useState("");
+  const [carregando, definirCarregando] = useState(true);
+  const [erroCarga, definirErroCarga] = useState("");
+  const [operacao, definirOperacao] = useState(null);
+  const [feedback, definirFeedback] = useState(null);
+  const partidasDaRodada = partidas.filter(
+    (partida) => partida.rodada === rodada,
+  );
+
+  useEffect(() => {
+    if (!carregando) return;
+    const controle = new AbortController();
+    consultarPlacares(controle.signal)
+      .then((dados) => {
+        if (!controle.signal.aborted) definirPartidas(dados);
+      })
+      .catch((erro) => {
+        if (!controle.signal.aborted) definirErroCarga(erro.message);
+      })
+      .finally(() => {
+        if (!controle.signal.aborted) definirCarregando(false);
+      });
+    return () => controle.abort();
+  }, [carregando]);
 
   useEffect(() => {
     if (foco) document.getElementById(`gols-mandante-${foco.id}`)?.focus();
@@ -16,12 +43,17 @@ export default function App() {
 
   function mudarRodada(numero) {
     definirRodada(numero);
-    definirAviso("");
+    definirFeedback(null);
+  }
+
+  function recarregar() {
+    definirCarregando(true);
+    definirErroCarga("");
   }
 
   function atualizarRascunho(id, placar) {
     definirRascunhos((anteriores) => new Map(anteriores).set(id, placar));
-    definirAviso("");
+    definirFeedback(null);
   }
 
   function limparRascunhos(ids) {
@@ -32,20 +64,32 @@ export default function App() {
     });
   }
 
-  function salvar(resultados) {
-    definirPartidas((anteriores) => {
-      const placares = new Map(
-        anteriores.map((partida) => [partida.id, partida]),
-      );
-      for (const resultado of resultados) placares.set(resultado.id, resultado);
-      return [...placares.values()];
-    });
-    limparRascunhos(resultados.map(({ id }) => id));
-    definirAviso(
-      resultados.length === 1
-        ? "1 placar salvo na rodada."
-        : `${resultados.length} placares salvos na rodada.`,
-    );
+  async function salvar(resultados) {
+    if (operacao) return;
+    definirOperacao("salvar");
+    definirFeedback(null);
+    try {
+      const salvos = await gravarRodada(rodada, resultados);
+      definirPartidas((anteriores) => {
+        const placares = new Map(
+          anteriores.map((partida) => [partida.id, partida]),
+        );
+        for (const resultado of salvos) placares.set(resultado.id, resultado);
+        return [...placares.values()];
+      });
+      limparRascunhos(salvos.map(({ id }) => id));
+      definirFeedback({
+        operacao: "salvar",
+        aviso:
+          salvos.length === 1
+            ? "1 placar salvo na rodada."
+            : `${salvos.length} placares salvos na rodada.`,
+      });
+    } catch (erro) {
+      definirFeedback({ operacao: "salvar", erro: erro.message });
+    } finally {
+      definirOperacao(null);
+    }
   }
 
   function editar(partida) {
@@ -53,13 +97,23 @@ export default function App() {
     definirFoco({ id: partida.id });
   }
 
-  function excluir(partida) {
-    if (!window.confirm("Excluir este placar da simulação?")) return;
-    definirPartidas((anteriores) =>
-      anteriores.filter(({ id }) => id !== partida.id),
-    );
-    limparRascunhos([partida.id]);
-    definirAviso("Placar excluído.");
+  async function excluir(partida) {
+    if (operacao || !window.confirm("Excluir este placar da simulação?"))
+      return;
+    definirOperacao("excluir");
+    definirFeedback(null);
+    try {
+      await removerPlacar(partida.partida_id);
+      definirPartidas((anteriores) =>
+        anteriores.filter(({ id }) => id !== partida.id),
+      );
+      limparRascunhos([partida.id]);
+      definirFeedback({ operacao: "excluir", aviso: "Placar excluído." });
+    } catch (erro) {
+      definirFeedback({ operacao: "excluir", erro: erro.message });
+    } finally {
+      definirOperacao(null);
+    }
   }
 
   return (
@@ -82,27 +136,47 @@ export default function App() {
             classificação.
           </p>
         </div>
-        <div className="quadro">
-          <div className="area-formulario">
-            <PlacarForm
-              rodada={rodada}
-              partidas={partidas}
-              rascunhos={rascunhos}
-              aviso={aviso}
-              aoMudarRodada={mudarRodada}
-              aoAlterarPlacar={atualizarRascunho}
-              aoSalvar={salvar}
-            />
+        {carregando && <p role="status">Carregando placares…</p>}
+        {erroCarga && (
+          <div className="erro space-y-2" role="alert">
+            <p>{erroCarga}</p>
+            <button
+              className="botao-primario"
+              type="button"
+              onClick={recarregar}
+            >
+              Tentar novamente
+            </button>
           </div>
-          <div className="area-classificacao">
-            <Classificacao partidas={partidas} />
-            <Partidas
-              partidas={partidas}
-              aoEditar={editar}
-              aoExcluir={excluir}
-            />
+        )}
+        {!carregando && !erroCarga && (
+          <div className="quadro">
+            <div className="area-formulario">
+              <PlacarForm
+                rodada={rodada}
+                partidas={partidasDaRodada}
+                rascunhos={rascunhos}
+                feedback={feedback?.operacao === "salvar" ? feedback : null}
+                operacao={operacao}
+                aoMudarRodada={mudarRodada}
+                aoAlterarPlacar={atualizarRascunho}
+                aoSalvar={salvar}
+              />
+            </div>
+            <div className="area-classificacao">
+              <Classificacao partidas={partidas} />
+              <Partidas
+                rodada={rodada}
+                partidas={partidasDaRodada}
+                aoMudarRodada={mudarRodada}
+                aoEditar={editar}
+                aoExcluir={excluir}
+                operacao={operacao}
+                feedback={feedback?.operacao === "excluir" ? feedback : null}
+              />
+            </div>
           </div>
-        </div>
+        )}
       </main>
     </>
   );

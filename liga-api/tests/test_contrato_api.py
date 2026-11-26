@@ -39,3 +39,23 @@ def test_consulta_de_saude_rejeita_envio_por_post(cliente_api: TestClient):
     }
     assert "GET" in metodos_permitidos
     assert "POST" not in metodos_permitidos
+
+
+@pytest.mark.parametrize(
+    ("origem", "status"),
+    [("http://127.0.0.1:5173", 200), ("https://outra-origem.example", 400)],
+)
+def test_cors_verifica_a_origem_do_frontend(cliente_api, origem, status):
+    resposta = cliente_api.options(
+        "/rodadas/1/placares",
+        headers={
+            "Origin": origem,
+            "Access-Control-Request-Method": "PUT",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+
+    assert resposta.status_code == status
+    assert resposta.headers.get("access-control-allow-origin") == (
+        origem if status == 200 else None
+    )

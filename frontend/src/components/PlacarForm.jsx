@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { times, validarPlacar } from "../campeonato.js";
-import { confrontosDaRodada, TOTAL_RODADAS } from "../confrontos.js";
+import { times, validarGolsDoPlacar } from "../campeonato.js";
+import { confrontosDaRodada } from "../confrontos.js";
 import { SeloTime } from "./Classificacao.jsx";
+import SeletorRodada from "./SeletorRodada.jsx";
 
 const catalogo = new Map(times.map((time) => [time.id, time]));
 const placarVazio = { gols_mandante: "", gols_visitante: "" };
 
-function JogoDaRodada({ confronto, placar, erro, aoAlterar }) {
+function JogoDaRodada({ confronto, placar, erro, aoAlterar, ocupado }) {
   const mandante = catalogo.get(confronto.mandante_id);
   const visitante = catalogo.get(confronto.visitante_id);
   const erroId = `erro-placar-${confronto.id}`;
@@ -24,6 +25,7 @@ function JogoDaRodada({ confronto, placar, erro, aoAlterar }) {
     <fieldset
       className="jogo-da-rodada"
       aria-label={`${mandante.nome} x ${visitante.nome}`}
+      disabled={ocupado}
     >
       <div className="times-do-jogo">
         <label className="time-do-jogo">
@@ -73,18 +75,15 @@ export default function PlacarForm({
   rodada,
   partidas,
   rascunhos,
-  aviso,
+  feedback,
+  operacao,
   aoMudarRodada,
   aoAlterarPlacar,
   aoSalvar,
 }) {
   const [rodadaValidada, definirRodadaValidada] = useState(null);
   const confrontos = confrontosDaRodada(rodada);
-  const placares = new Map(
-    partidas
-      .filter((partida) => partida.rodada === rodada)
-      .map((partida) => [partida.id, partida]),
-  );
+  const placares = new Map(partidas.map((partida) => [partida.id, partida]));
 
   const resultados = [];
   const erros = new Map();
@@ -100,7 +99,7 @@ export default function PlacarForm({
     )
       continue;
 
-    const erro = validarPlacar({ ...confronto, ...rascunho });
+    const erro = validarGolsDoPlacar(rascunho);
     if (erro) {
       erros.set(confronto.id, erro);
       continue;
@@ -125,13 +124,9 @@ export default function PlacarForm({
       mensagem = "Preencha ou altere um placar para salvar.";
   }
 
-  function mudarRodada(numero) {
-    definirRodadaValidada(null);
-    aoMudarRodada(numero);
-  }
-
   function salvar(evento) {
     evento.preventDefault();
+    if (operacao) return;
     if (erros.size || !resultados.length) {
       definirRodadaValidada(rodada);
       return;
@@ -144,29 +139,12 @@ export default function PlacarForm({
     <section className="painel confrontos" aria-labelledby="titulo-confrontos">
       <div className="confrontos-topo">
         <h2 id="titulo-confrontos">Confrontos</h2>
-        <fieldset aria-label="Rodada">
-          <div className="seletor">
-            <button
-              type="button"
-              aria-label="Rodada anterior"
-              onClick={() => mudarRodada(rodada - 1)}
-              disabled={rodada === 1}
-            >
-              <span aria-hidden="true">←</span>
-            </button>
-            <span className="seletor-valor" aria-live="polite">
-              Rodada {rodada}
-            </span>
-            <button
-              type="button"
-              aria-label="Próxima rodada"
-              onClick={() => mudarRodada(rodada + 1)}
-              disabled={rodada === TOTAL_RODADAS}
-            >
-              <span aria-hidden="true">→</span>
-            </button>
-          </div>
-        </fieldset>
+        <SeletorRodada
+          rodada={rodada}
+          aoMudarRodada={aoMudarRodada}
+          ocupado={!!operacao}
+          anunciar
+        />
         <p className="confrontos-contagem">
           {placares.size} de {confrontos.length} placares registrados
         </p>
@@ -184,21 +162,28 @@ export default function PlacarForm({
                 }
                 erro={mostrarValidacao ? erros.get(confronto.id) : undefined}
                 aoAlterar={aoAlterarPlacar}
+                ocupado={!!operacao}
               />
             </li>
           ))}
         </ul>
         <div className="confrontos-acoes">
-          {mensagem && (
+          {(mensagem || feedback?.erro) && (
             <p className="erro mb-2" role="alert">
-              {mensagem}
+              {mensagem || feedback.erro}
             </p>
           )}
-          <button className="botao-primario w-full" type="submit">
-            Salvar placares da rodada
+          <button
+            className="botao-primario w-full disabled:opacity-60"
+            type="submit"
+            disabled={!!operacao}
+          >
+            {operacao === "salvar"
+              ? "Salvando placares…"
+              : "Salvar placares da rodada"}
           </button>
           <p className="confrontos-aviso" role="status">
-            {mensagem ? "" : aviso}
+            {mensagem ? "" : feedback?.aviso}
           </p>
         </div>
       </form>

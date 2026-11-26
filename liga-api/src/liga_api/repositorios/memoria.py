@@ -32,12 +32,15 @@ class RepositorioPartidasEmMemoria:
         self._sequencia = count(1)
         self._lock = Lock()
 
-    def listar(self, rodada: int | None = None) -> list[Partida]:
+    def listar(
+        self, rodada: int | None = None, *, calendario: bool = False
+    ) -> list[Partida]:
         with self._lock:
             return [
                 partida
                 for partida in self._partidas.values()
-                if rodada is None or partida.rodada == rodada
+                if (rodada is None or partida.rodada == rodada)
+                and (not calendario or partida.chave_confronto is not None)
             ]
 
     def obter(self, partida_id: int) -> Partida | None:
@@ -49,6 +52,21 @@ class RepositorioPartidasEmMemoria:
             registrada = replace(partida, id=next(self._sequencia))
             self._partidas[registrada.id] = registrada
             return registrada
+
+    def salvar_lote(self, partidas: list[Partida]) -> list[Partida]:
+        with self._lock:
+            ids = {
+                partida.chave_confronto: partida.id
+                for partida in self._partidas.values()
+                if partida.chave_confronto is not None
+            }
+            salvas = []
+            for partida in partidas:
+                partida_id = ids.get(partida.chave_confronto)
+                registrada = replace(partida, id=partida_id or next(self._sequencia))
+                self._partidas[registrada.id] = registrada
+                salvas.append(registrada)
+            return salvas
 
     def substituir(self, partida: Partida) -> bool:
         with self._lock:
