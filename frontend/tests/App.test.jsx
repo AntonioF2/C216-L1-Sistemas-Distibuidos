@@ -28,43 +28,65 @@ it("guarda os rascunhos ao navegar e salva juntos os placares preenchidos", asyn
   vi.stubGlobal("fetch", fetchMock);
   render(<App />);
 
-  const painel = within(await screen.findByRole("region", { name: "Confrontos" }),);
+  const painel = within(
+    await screen.findByRole("region", { name: "Confrontos" }),
+  );
   const rodada = within(painel.getByRole("group", { name: "Rodada" }));
-  const jogo = () => within(painel.getByRole("group", { name: "Fluminense x Grêmio" }));
-  const formulario = within(painel.getByRole("form", { name: "Placares da rodada" }),);
+  const jogo = () =>
+    within(painel.getByRole("group", { name: "Fluminense x Grêmio" }));
+  const formulario = within(
+    painel.getByRole("form", { name: "Placares da rodada" }),
+  );
 
   expect(rodada.getByText("Rodada 1")).toBeInTheDocument();
-  expect(rodada.getByRole("button", { name: "Rodada anterior" }),).toBeDisabled();
+  expect(
+    rodada.getByRole("button", { name: "Rodada anterior" }),
+  ).toBeDisabled();
   expect(formulario.getAllByRole("group")).toHaveLength(10);
   expect(jogo().getByLabelText("Gols do mandante")).toHaveValue(null);
-  
+
   await pessoa.type(jogo().getByLabelText("Gols do mandante"), "3");
 
   await pessoa.click(rodada.getByRole("button", { name: "Próxima rodada" }));
   expect(rodada.getByText("Rodada 2")).toBeInTheDocument();
   expect(formulario.getAllByRole("group")).toHaveLength(10);
-  expect(painel.getByRole("group", { name: "Flamengo x Internacional" }),).toBeInTheDocument();
-  expect(painel.queryByRole("group", { name: "Fluminense x Grêmio" }),).toBeNull();
+  expect(
+    painel.getByRole("group", { name: "Flamengo x Internacional" }),
+  ).toBeInTheDocument();
+  expect(
+    painel.queryByRole("group", { name: "Fluminense x Grêmio" }),
+  ).toBeNull();
 
   await pessoa.click(rodada.getByRole("button", { name: "Rodada anterior" }));
   expect(jogo().getByLabelText("Gols do mandante")).toHaveValue(3);
   await pessoa.type(jogo().getByLabelText("Gols do visitante"), "0");
 
-  const segundoJogo = within(painel.getByRole("group", { name: "Botafogo x Cruzeiro" }),);
+  const segundoJogo = within(
+    painel.getByRole("group", { name: "Botafogo x Cruzeiro" }),
+  );
 
   await pessoa.type(segundoJogo.getByLabelText("Gols do mandante"), "1");
   await pessoa.type(segundoJogo.getByLabelText("Gols do visitante"), "1");
   expect(formulario.getAllByRole("button")).toHaveLength(1);
-  await pessoa.click(formulario.getByRole("button", { name: "Salvar placares da rodada" }),);
+  await pessoa.click(
+    formulario.getByRole("button", { name: "Salvar placares da rodada" }),
+  );
 
-  expect(formulario.getByRole("status")).toHaveTextContent("2 placares salvos na rodada.",);
-  expect(fetchMock).toHaveBeenLastCalledWith(expect.stringMatching(/\/rodadas\/1\/placares$/), expect.objectContaining({ method: "PUT" }),);
+  expect(formulario.getByRole("status")).toHaveTextContent(
+    "2 placares salvos na rodada.",
+  );
+  expect(fetchMock).toHaveBeenLastCalledWith(
+    expect.stringMatching(/\/rodadas\/1\/placares$/),
+    expect.objectContaining({ method: "PUT" }),
+  );
   expect(JSON.parse(fetchMock.mock.lastCall[1].body)).toHaveLength(2);
   expect(painel.getByText("2 de 10 placares registrados")).toBeInTheDocument();
   const jogos = screen.getByRole("region", { name: "Partidas registradas" });
   expect(within(jogos).getByText("3 × 0")).toBeInTheDocument();
   expect(within(jogos).getByText("1 × 1")).toBeInTheDocument();
-  const linha = screen.getByRole("rowheader", { name: "Fluminense" }).closest("tr");
+  const linha = screen
+    .getByRole("rowheader", { name: "Fluminense" })
+    .closest("tr");
   expect(within(linha).getAllByRole("cell")[1]).toHaveTextContent("3");
 });
 
@@ -97,9 +119,13 @@ it("recupera os placares e filtra o histórico conforme a rodada dos dois painé
   render(<App />);
 
   expect(screen.getByRole("status")).toHaveTextContent("Carregando placares");
-  expect(await screen.findByRole("alert")).toHaveTextContent("Não foi possível conectar à API.",);
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Não foi possível conectar à API.",
+  );
   await pessoa.click(screen.getByRole("button", { name: "Tentar novamente" }));
-  const lista = within(await screen.findByRole("region", { name: "Partidas registradas" }),);
+  const lista = within(
+    await screen.findByRole("region", { name: "Partidas registradas" }),
+  );
   expect(lista.getByText("2 × 2")).toBeInTheDocument();
   expect(lista.queryByText("4 × 0")).not.toBeInTheDocument();
 
@@ -110,7 +136,9 @@ it("recupera os placares e filtra o histórico conforme a rodada dos dois painé
   expect(lista.getByText("4 × 0")).toBeInTheDocument();
   expect(lista.queryByText("2 × 2")).not.toBeInTheDocument();
 
-  await pessoa.click(confrontos.getByRole("button", { name: "Rodada anterior" }),);
+  await pessoa.click(
+    confrontos.getByRole("button", { name: "Rodada anterior" }),
+  );
   expect(lista.getByText("Rodada 1")).toBeInTheDocument();
   expect(lista.getByText("2 × 2")).toBeInTheDocument();
 });
@@ -128,13 +156,21 @@ it("exibe a falha da API e preserva o rascunho", async () => {
   );
   render(<App />);
 
-  const formulario = within(await screen.findByRole("form", { name: "Placares da rodada" }),);
-  const partida = within(formulario.getByRole("group", { name: "Fluminense x Grêmio" }),);
+  const formulario = within(
+    await screen.findByRole("form", { name: "Placares da rodada" }),
+  );
+  const partida = within(
+    formulario.getByRole("group", { name: "Fluminense x Grêmio" }),
+  );
   const mandante = partida.getByLabelText("Gols do mandante");
   await pessoa.type(mandante, "2");
   await pessoa.type(partida.getByLabelText("Gols do visitante"), "0");
-  await pessoa.click(formulario.getByRole("button", { name: "Salvar placares da rodada" }),);
-  expect(await formulario.findByRole("alert")).toHaveTextContent("Falha ao gravar.",);
+  await pessoa.click(
+    formulario.getByRole("button", { name: "Salvar placares da rodada" }),
+  );
+  expect(await formulario.findByRole("alert")).toHaveTextContent(
+    "Falha ao gravar.",
+  );
   expect(mandante).toHaveValue(2);
   expect(screen.getByText("0 de 10 placares registrados")).toBeInTheDocument();
 });
