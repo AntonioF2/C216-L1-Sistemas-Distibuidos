@@ -1,0 +1,12 @@
+{
+  "files": {
+    "includes": [
+      "**",
+      "!package-lock.json",
+      "!dist",
+      "!playwright-report",
+      "!test-results"
+    ]
+  },
+  "formatter": { "indentStyle": "space" }
+}
