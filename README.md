@@ -1,5 +1,7 @@
 # Mesa da Rodada
 
+Video explicativo do projeto: (https://youtu.be/xcyr9xzN8Jc)
+
 O Mesa da Rodada é um simulador do Brasileirão Série A de 2026 desenvolvido para o projeto final de C216 — Sistemas Distribuídos. A ideia é preencher os placares dos jogos e acompanhar como eles mudam a classificação.
 
 A tela abre na Rodada 1. Use as setas para navegar pelos confrontos e **Salvar placares da rodada** para gravar os jogos preenchidos de uma vez. Em **Partidas registradas**, dá para editar e excluir resultados. Os placares voltam ao recarregar a página, e o botão **Zerar simulação** apaga os resultados de todas as rodadas após a confirmação.
