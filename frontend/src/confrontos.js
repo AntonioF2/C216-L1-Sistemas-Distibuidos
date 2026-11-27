@@ -1,7 +1,6 @@
 import { times } from "./campeonato.js";
 
 // Tabela básica da CBF, Série A 2026. Em cada par, o mandante vem primeiro.
-// https://stcbfsiteprdimgbrs.blob.core.windows.net/img-site/cdn/Tabela_BA_sica_Brasileiro_SA_rie_A_2026_d64996b4d8.pdf
 const confrontosPorRodada = [
   // Rodada 1
   [
@@ -420,8 +419,6 @@ const confrontosPorRodada = [
     ["CHA", "FLU"],
   ],
   // Rodada 33
-  // A ficha oficial da CBF confirma Remo x Botafogo na 33ª rodada.
-  // https://www.cbf.com.br/futebol-brasileiro/jogos/campeonato-brasileiro/serie-a/2026/remo-x-botafogo/832220?view=escalacao
   [
     ["FLU", "INT"],
     ["VAS", "FLA"],
